@@ -122,14 +122,13 @@ public class GUIMain {
     });
 
     encodeButton.addActionListener(e -> {
-      JPanel panel = new JPanel(new GridLayout(2, 1));
-      JPasswordField passwordField = new JPasswordField();
-      panel.add(new JLabel("Enter stego-key:"));
-      panel.add(passwordField);
-      if (JOptionPane.showConfirmDialog(contentPane, panel, "Encode", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+      EncodeDecodeOptionPane encodeDecodeOptionPane = new EncodeDecodeOptionPane(true);
+      if (encodeDecodeOptionPane.showDialog(contentPane) == JOptionPane.OK_OPTION) {
         JDialog dialog = new JDialog();
         dialog.setTitle("BPCS Steganography");
-        dialog.setContentPane(new GUIMain(imageEncodeDecode.encodeImage(new String(passwordField.getPassword()))).contentPane);
+        dialog.setContentPane(new GUIMain(
+            imageEncodeDecode.encodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
+                encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding())).contentPane);
         dialog.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         dialog.pack();
         dialog.setVisible(true);
@@ -137,14 +136,12 @@ public class GUIMain {
     });
 
     decodeButton.addActionListener(e -> {
-      JPanel panel = new JPanel(new GridLayout(2, 1));
-      JPasswordField passwordField = new JPasswordField();
-      panel.add(new JLabel("Enter stego-key:"));
-      panel.add(passwordField);
-      if (JOptionPane.showConfirmDialog(contentPane, panel, "Decode", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+      EncodeDecodeOptionPane encodeDecodeOptionPane = new EncodeDecodeOptionPane(false);
+      if (encodeDecodeOptionPane.showDialog(contentPane) == JOptionPane.OK_OPTION) {
         JDialog dialog = new JDialog();
         dialog.setTitle("BPCS Steganography");
-        dialog.setContentPane(new GUIMain(imageEncodeDecode.decodeImage(new String(passwordField.getPassword()))).contentPane);
+        dialog.setContentPane(new GUIMain(imageEncodeDecode.encodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
+            encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding())).contentPane);
         dialog.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         dialog.pack();
         dialog.setVisible(true);

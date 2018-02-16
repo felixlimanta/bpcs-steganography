@@ -5,9 +5,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
 
-public class ImageEncodeDecode {
+class ImageEncodeDecode {
   private String imageFilename;
   private BufferedImage image;
   private String messageFilename;
@@ -62,11 +61,11 @@ public class ImageEncodeDecode {
     return message != null && messageFilename != null;
   }
 
-  ImageEncodeDecode encodeImage(String stegoKey) {
+  ImageEncodeDecode encodeImage(String key, double threshold, boolean encryptedMessage, boolean randomEncoding) {
     return this;
   }
 
-  ImageEncodeDecode decodeImage(String stegoKey) {
+  ImageEncodeDecode decodeImage(String key, double threshold, boolean encryptedMessage, boolean randomEncoding) {
     return this;
   }
 }
