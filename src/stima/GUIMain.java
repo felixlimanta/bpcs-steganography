@@ -41,6 +41,15 @@ public class GUIMain {
     decodeButton.setEnabled(imageEncodeDecode.isImageLoaded());
   }
 
+  private void openNewWindow(ImageEncodeDecode imageEncodeDecode) {
+    JDialog dialog = new JDialog();
+    dialog.setTitle("BPCS Steganography");
+    dialog.setContentPane(new GUIMain(imageEncodeDecode).contentPane);
+    dialog.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    dialog.pack();
+    dialog.setVisible(true);
+  }
+
   private GUIMain (ImageEncodeDecode _imageEncodeDecode) {
     imageEncodeDecode = _imageEncodeDecode;
     if (imageEncodeDecode.isImageLoaded()) {
@@ -124,27 +133,16 @@ public class GUIMain {
     encodeButton.addActionListener(e -> {
       EncodeDecodeOptionPane encodeDecodeOptionPane = new EncodeDecodeOptionPane(true);
       if (encodeDecodeOptionPane.showDialog(contentPane) == JOptionPane.OK_OPTION) {
-        JDialog dialog = new JDialog();
-        dialog.setTitle("BPCS Steganography");
-        dialog.setContentPane(new GUIMain(
-            imageEncodeDecode.encodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
-                encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding())).contentPane);
-        dialog.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        dialog.pack();
-        dialog.setVisible(true);
+        openNewWindow(imageEncodeDecode.encodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
+            encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding()));
       }
     });
 
     decodeButton.addActionListener(e -> {
       EncodeDecodeOptionPane encodeDecodeOptionPane = new EncodeDecodeOptionPane(false);
       if (encodeDecodeOptionPane.showDialog(contentPane) == JOptionPane.OK_OPTION) {
-        JDialog dialog = new JDialog();
-        dialog.setTitle("BPCS Steganography");
-        dialog.setContentPane(new GUIMain(imageEncodeDecode.decodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
-            encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding())).contentPane);
-        dialog.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        dialog.pack();
-        dialog.setVisible(true);
+        openNewWindow(imageEncodeDecode.decodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
+            encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding()));
       }
     });
   }
