@@ -140,7 +140,7 @@ public class GUIMain {
       if (encodeDecodeOptionPane.showDialog(contentPane) == JOptionPane.OK_OPTION) {
         JDialog dialog = new JDialog();
         dialog.setTitle("BPCS Steganography");
-        dialog.setContentPane(new GUIMain(imageEncodeDecode.encodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
+        dialog.setContentPane(new GUIMain(imageEncodeDecode.decodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
             encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding())).contentPane);
         dialog.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         dialog.pack();
