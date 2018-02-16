@@ -26,7 +26,7 @@ public class GUIMain {
   private ImageEncodeDecode imageEncodeDecode;
 
   private void loadImage() {
-    loadedImage.setIcon(new ImageIcon(imageEncodeDecode.getImage().getScaledInstance(-1, MAX_IMAGE_HEIGHT, Image.SCALE_SMOOTH)));
+    loadedImage.setIcon(new ImageIcon(imageEncodeDecode.getImage().getScaledInstance(-1, Math.min(imageEncodeDecode.getImage().getHeight(), MAX_IMAGE_HEIGHT), Image.SCALE_SMOOTH)));
     loadedImage.setText("");
   }
 
@@ -122,8 +122,11 @@ public class GUIMain {
     });
 
     encodeButton.addActionListener(e -> {
+      JPanel panel = new JPanel(new GridLayout(2, 1));
       JPasswordField passwordField = new JPasswordField();
-      if (JOptionPane.showConfirmDialog(contentPane, passwordField, "Encode - Enter stego-key", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+      panel.add(new JLabel("Enter stego-key:"));
+      panel.add(passwordField);
+      if (JOptionPane.showConfirmDialog(contentPane, panel, "Encode", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
         JDialog dialog = new JDialog();
         dialog.setTitle("BPCS Steganography");
         dialog.setContentPane(new GUIMain(imageEncodeDecode.encodeImage(new String(passwordField.getPassword()))).contentPane);
@@ -134,8 +137,11 @@ public class GUIMain {
     });
 
     decodeButton.addActionListener(e -> {
+      JPanel panel = new JPanel(new GridLayout(2, 1));
       JPasswordField passwordField = new JPasswordField();
-      if (JOptionPane.showConfirmDialog(contentPane, passwordField, "Decode - Enter stego-key", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+      panel.add(new JLabel("Enter stego-key:"));
+      panel.add(passwordField);
+      if (JOptionPane.showConfirmDialog(contentPane, panel, "Decode", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
         JDialog dialog = new JDialog();
         dialog.setTitle("BPCS Steganography");
         dialog.setContentPane(new GUIMain(imageEncodeDecode.decodeImage(new String(passwordField.getPassword()))).contentPane);

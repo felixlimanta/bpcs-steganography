@@ -13,13 +13,24 @@ public class ImageEncodeDecode {
   private String messageFilename;
   private byte[] message;
 
+  private String getFormatType (File file) throws IOException {
+    String formatType = file.getName().substring(file.getName().lastIndexOf('.') + 1);
+    if (formatType.equalsIgnoreCase("bmp") || formatType.equalsIgnoreCase("png")) {
+      return formatType;
+    }
+    else {
+      throw new IOException();
+    }
+  }
+
   void loadImage(File inputFile) throws IOException {
+    getFormatType(inputFile);
     image = ImageIO.read(inputFile);
     imageFilename = inputFile.getName();
   }
 
   void saveImage(File outputFile) throws IOException {
-    ImageIO.write(image, outputFile.getName().substring(outputFile.getName().lastIndexOf('.') + 1), outputFile);
+    ImageIO.write(image, getFormatType(outputFile), outputFile);
   }
 
   String getImageFilename() {
