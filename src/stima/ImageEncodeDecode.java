@@ -4,23 +4,58 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 
-public class CoverImage {
-  private BufferedImage bufferedImage;
+public class ImageEncodeDecode {
+  private String imageFilename;
+  private BufferedImage image;
+  private String messageFilename;
+  private byte[] message;
 
-  CoverImage(File file) throws IOException {
-    bufferedImage = ImageIO.read(file);
+  void loadImage(File inputFile) throws IOException {
+    image = ImageIO.read(inputFile);
+    imageFilename = inputFile.getName();
   }
 
-  CoverImage(BufferedImage bufferedImage) {
-    this.bufferedImage = bufferedImage;
+  void saveImage(File outputFile) throws IOException {
+    ImageIO.write(image, outputFile.getName().substring(outputFile.getName().lastIndexOf('.') + 1), outputFile);
   }
 
-  StegoImage encodeImage(EmbeddedMessage embeddedMessage, String stegoKey) {
-    return new StegoImage(bufferedImage);
+  String getImageFilename() {
+    return imageFilename;
   }
 
-  BufferedImage getBufferedImage() {
-    return bufferedImage;
+  BufferedImage getImage() {
+    return image;
+  }
+
+  boolean isImageLoaded() {
+    return image != null && imageFilename != null;
+  }
+
+  void loadMessage(File inputFile) throws IOException {
+    message = Files.readAllBytes(inputFile.toPath());
+    messageFilename = inputFile.getName();
+  }
+
+  void saveMessage(File outputFile) throws IOException {
+    Files.write(outputFile.toPath(), message);
+  }
+
+  String getMessageFilename() {
+    return messageFilename;
+  }
+
+  boolean isMessageLoaded() {
+    return message != null && messageFilename != null;
+  }
+
+  ImageEncodeDecode encodeImage(String stegoKey) {
+    return this;
+  }
+
+  ImageEncodeDecode decodeImage(String stegoKey) {
+    return this;
   }
 }
