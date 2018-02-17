@@ -1,5 +1,3 @@
-package stima;
-
 import javax.swing.*;
 import java.awt.*;
 
