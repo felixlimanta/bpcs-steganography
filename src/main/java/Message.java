@@ -15,20 +15,55 @@ public class Message {
   private int threshold;
 
   private boolean[] conjugationMap;
+  private boolean encoded;
+
+  //region Public functions
+  //------------------------------------------------------------------------------------------------
 
   public Message(String filename, byte[] message, int threshold) {
     this.filename = filename;
     this.message = new byte[message.length];
     this.threshold = threshold;
     System.arraycopy(message, 0, this.message, 0, message.length);
-
-    encodeMessage();
+    encoded = false;
   }
+
+  public Message(byte[] encodedMessage) {
+    this.encodedMessage = new byte[encodedMessage.length];
+    System.arraycopy(encodedMessage, 0, this.encodedMessage, 0, encodedMessage.length);
+    encoded = true;
+  }
+
+  public void encodeMessage() {
+    if (!encoded) {
+      processMessageEncoding();
+      calculateMessageComplexity();
+      conjugateMessage();
+      encodeConjugationMap();
+      encoded = true;
+    }
+  }
+
+  public void decodeMessage() {
+    if (encoded) {
+      decodeConjugationMap();
+      deconjugateMessage();
+      processMessageDecoding();
+      encoded = false;
+    }
+  }
+
+  public boolean isEncoded() {
+    return encoded;
+  }
+
+  //------------------------------------------------------------------------------------------------
+  //endregion
 
   //region Message encoding/decoding
   //------------------------------------------------------------------------------------------------
 
-  public void encodeMessage() {
+  private void processMessageEncoding() {
     int len = filename.length();
     byte[] b = new byte[message.length + len + 2];
 
@@ -42,7 +77,7 @@ public class Message {
     encodedMessage = GreyCodeConverter.toGreyCode(b);
   }
 
-  public void decodeMessage() {
+  private void processMessageDecoding() {
     byte[] b = GreyCodeConverter.toBinary(encodedMessage);
     b = removePadding(b);
 
@@ -58,10 +93,55 @@ public class Message {
   //------------------------------------------------------------------------------------------------
   //endregion
 
+  //region Complexity calculation
+  //------------------------------------------------------------------------------------------------
+
+  private void calculateMessageComplexity() {
+    messageSegmentComplexity = new int[encodedMessage.length / 8];
+    for (int i = 0; i < encodedMessage.length; i += 8) {
+      messageSegmentComplexity[i] = calculateSegmentComplexity(encodedMessage, i);
+    }
+  }
+
+  private static int calculateSegmentComplexity(byte[] data, int startIndex) {
+    int n = 0;
+    boolean b1, b2, b3;
+    for (int i = startIndex; i < startIndex + 7; ++i) {
+      for (int j = 0; j < 7; ++j) {
+        b1 = getBit(data[i], j);
+        b2 = getBit(data[i], j + 1);
+        b3 = getBit(data[i + 1], j);
+
+        if (b1 ^ b2)
+          n++;
+        if (b1 ^ b3)
+          n++;
+      }
+
+      b1 = getBit(data[i], 7);
+      b3 = getBit(data[i + 1], 7);
+
+      if (b1 ^ b3)
+        n++;
+    }
+
+    for (int j = 0; j < 7; ++j) {
+      b1 = getBit(data[startIndex + 7], j);
+      b2 = getBit(data[startIndex + 7], j + 1);
+
+      if (b1 ^ b2)
+        n++;
+    }
+    return n;
+  }
+
+  //------------------------------------------------------------------------------------------------
+  //endregion
+
   //region Message conjugation
   //------------------------------------------------------------------------------------------------
   
-  public void conjugateMessage() {
+  private void conjugateMessage() {
     conjugationMap = new boolean[messageSegmentComplexity.length];
 
     for (int i = 0; i < conjugationMap.length; ++i) {
@@ -72,12 +152,20 @@ public class Message {
     }
   }
 
-  public void deconjugateMessage() {
+  private void deconjugateMessage() {
     for (int i = 0; i < conjugationMap.length; ++i) {
       if (conjugationMap[i]) {
         conjugateBlock(encodedMessage, i * 8);
         conjugationMap[i] = false;
       }
+    }
+  }
+
+  private void conjugateBlock(byte[] data, int startIndex) {
+    for (int i = startIndex; i < startIndex + 7; ++i) {
+      int temp = Byte.toUnsignedInt(data[i]);
+      temp ^= checkerboard[i % 2];
+      data[i] = (byte) temp;
     }
   }
 
@@ -87,7 +175,7 @@ public class Message {
   //region Conjugation map encoding/decoding
   //------------------------------------------------------------------------------------------------
 
-  public void encodeConjugationMap() {
+  private void encodeConjugationMap() {
     ArrayList<Byte> conjugationList = new ArrayList<>();
     int len = conjugationMap.length;
 
@@ -129,7 +217,7 @@ public class Message {
     encodedMessage = temp;
   }
 
-  public void decodeConjugationMap() {
+  private void decodeConjugationMap() {
     // Conjugate first block if necessary
     if (getBit(encodedMessage[0], 0)) {
       conjugateBlock(encodedMessage, 0);
@@ -166,59 +254,6 @@ public class Message {
     byte[] msg = new byte[encodedMessage.length - (++n)];
     System.arraycopy(encodedMessage, n, msg, 0, msg.length);
     encodedMessage = msg;
-  }
-
-  private void conjugateBlock(byte[] data, int startIndex) {
-    for (int i = startIndex; i < startIndex + 7; ++i) {
-      int temp = Byte.toUnsignedInt(data[i]);
-      temp ^= checkerboard[i % 2];
-      data[i] = (byte) temp;
-    }
-  }
-
-  //------------------------------------------------------------------------------------------------
-  //endregion
-
-  //region Complexity calculation
-  //------------------------------------------------------------------------------------------------
-
-  public void calculateMessageComplexity() {
-    messageSegmentComplexity = new int[encodedMessage.length / 8];
-    for (int i = 0; i < encodedMessage.length; i += 8) {
-      messageSegmentComplexity[i] = calculateSegmentComplexity(encodedMessage, i);
-    }
-  }
-
-  private static int calculateSegmentComplexity(byte[] data, int startIndex) {
-    int n = 0;
-    boolean b1, b2, b3;
-    for (int i = startIndex; i < startIndex + 7; ++i) {
-      for (int j = 0; j < 7; ++j) {
-        b1 = getBit(data[i], j);
-        b2 = getBit(data[i], j + 1);
-        b3 = getBit(data[i + 1], j);
-
-        if (b1 ^ b2)
-          n++;
-        if (b1 ^ b3)
-          n++;
-      }
-
-      b1 = getBit(data[i], 7);
-      b3 = getBit(data[i + 1], 7);
-
-      if (b1 ^ b3)
-        n++;
-    }
-
-    for (int j = 0; j < 7; ++j) {
-      b1 = getBit(data[startIndex + 7], j);
-      b2 = getBit(data[startIndex + 7], j + 1);
-
-      if (b1 ^ b2)
-        n++;
-    }
-    return n;
   }
 
   //------------------------------------------------------------------------------------------------
