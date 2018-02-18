@@ -3,33 +3,46 @@ import java.awt.image.DataBufferByte;
 
 public class BpcsEncoder {
 
+  public final static int ALPHA = 0;
+  public final static int GREY = 1;
+  public final static int RED = 1;
+  public final static int GREEN = 2;
+  public final static int BLUE = 3;
+
   private int numOfChannels;
+  private boolean hasAlpha;
   private BufferedImage image;
-  private Channel channel;
+
+  private int channel;
 
   public BpcsEncoder(BufferedImage image) {
     this.image = image;
-    if (image.getColorModel().hasAlpha()) {
-      numOfChannels = 4;
-    } else {
-      if (channel == Channel.ALPHA) {
-        throw new IllegalArgumentException("No alpha channel in image");
-      } else {
-        numOfChannels = 3;
-      }
-    }
+    this.numOfChannels = image.getRaster().getNumBands();
+    this.hasAlpha = image.getColorModel().hasAlpha();
   }
 
   public BufferedImage getImage() {
     return image;
   }
 
-  public Channel getChannel() {
+  public int getChannel() {
     return channel;
   }
 
-  public void setChannel(Channel channel) {
+  public void setChannel(int channel) {
+    if (!hasAlpha)
+      channel--;
+    if (channel >= numOfChannels)
+      throw new IllegalArgumentException("Invalid channel");
     this.channel = channel;
+  }
+
+  public int getNumOfChannels() {
+    return numOfChannels;
+  }
+
+  public boolean hasAlpha() {
+    return hasAlpha;
   }
 
   public int calculateComplexity(int bitplane) {
@@ -58,26 +71,10 @@ public class BpcsEncoder {
   }
 
   private int getIndex(int r, int c) {
-    return (r * image.getWidth() + c) * numOfChannels
-        + channel.getValue()
-        - ((numOfChannels == 3) ? 1 : 0);
+    return (r * image.getWidth() + c) * numOfChannels + channel;
   }
 
   private static boolean getBit(byte value, int position) {
     return ((value & (1 << position)) != 0);
-  }
-
-  public enum Channel {
-    ALPHA(0), RED(1), GREEN(2), BLUE(3);
-
-    private int value;
-
-    Channel(int value) {
-      this.value = value;
-    }
-
-    public int getValue() {
-      return value;
-    }
   }
 }

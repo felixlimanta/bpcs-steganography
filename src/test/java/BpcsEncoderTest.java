@@ -1,5 +1,6 @@
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import javax.imageio.ImageIO;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,25 +22,26 @@ public class BpcsEncoderTest {
     int h = bpcsEncoder.getImage().getHeight();
     int t = 2 * (h - 1) * (w - 1) + (h - 1) + (w - 1);
 
-    System.out.println("RED:");
-    bpcsEncoder.setChannel(BpcsEncoder.Channel.RED);
-    for (int i = 0; i < 8; ++i) {
-      int c = bpcsEncoder.calculateComplexity(i);
-      System.out.printf("\t%d: %d -> %.2f\n", i, c, ((float) c / t));
+    for (int j = 0; j < bpcsEncoder.getNumOfChannels(); ++j) {
+      System.out.printf("Channel %d\n", j);
+      bpcsEncoder.setChannel(BpcsEncoder.RED + j);
+      for (int i = 0; i < 8; ++i) {
+        int c = bpcsEncoder.calculateComplexity(i);
+        System.out.printf("\t%d: %d -> %.2f\n", i, c, ((float) c / t));
+      }
+      System.out.println();
     }
+  }
 
-    System.out.println("\nGREEN:");
-    bpcsEncoder.setChannel(BpcsEncoder.Channel.GREEN);
-    for (int i = 0; i < 8; ++i) {
-      int c = bpcsEncoder.calculateComplexity(i);
-      System.out.printf("\t%d: %d -> %.2f\n", i, c, ((float) c / t));
-    }
+  @Test
+  public void checkNoOfChannels() throws IOException {
+    String path1 = "C:\\Users\\ASUS\\Downloads\\64166790_p0 - Copy.jpg";
+    String path2 = "D:\\My Documents\\Work\\Kuliah\\ITB_1.png";
+    String path3 = "D:\\My Documents\\Work\\Kuliah\\ITB_2a.png";
 
-    System.out.println("\nBLUE:");
-    bpcsEncoder.setChannel(BpcsEncoder.Channel.BLUE);
-    for (int i = 0; i < 8; ++i) {
-      int c = bpcsEncoder.calculateComplexity(i);
-      System.out.printf("\t%d: %d -> %.2f\n", i, c, ((float) c / t));
-    }
+    System.out.printf("Channels: %d\n", bpcsEncoder.getImage().getRaster().getNumBands());
+    System.out.printf("Channels: %d\n", ImageIO.read(new File(path1)).getRaster().getNumBands());
+    System.out.printf("Channels: %d\n", ImageIO.read(new File(path2)).getRaster().getNumBands());
+    System.out.printf("Channels: %d\n", ImageIO.read(new File(path3)).getRaster().getNumBands());
   }
 }
