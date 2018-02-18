@@ -1,5 +1,9 @@
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+import javax.naming.SizeLimitExceededException;
 
 public class BpcsEncoder {
 
@@ -14,18 +18,34 @@ public class BpcsEncoder {
 
   private int numOfChannels;
   private boolean hasAlpha;
+  private int numOfPlanes;
   private BufferedImage image;
+
+  private int threshold;
 
   private BufferedImage[][] imageSegments;
   private int[][][][] imageSegmentsComplexity;
 
+  private Random random;
+  private String key;
+  private Set<Integer> embeddedSet;
+
   //region Construction
   //------------------------------------------------------------------------------------------------
 
-  public BpcsEncoder(BufferedImage image) {
+  public BpcsEncoder(BufferedImage image, float threshold) {
     this.image = image;
     this.numOfChannels = image.getRaster().getNumBands();
     this.hasAlpha = image.getColorModel().hasAlpha();
+    this.embeddedSet = new HashSet<>();
+    this.threshold = (int) (threshold * maxComplexity);
+    this.numOfPlanes = image.getWidth() * image.getHeight() * numOfChannels * 8;
+  }
+
+  public BpcsEncoder(BufferedImage image, float threshold, String key) {
+    this(image, threshold);
+    this.key = key;
+    this.random = new Random(key.hashCode());
   }
 
   //------------------------------------------------------------------------------------------------
@@ -44,6 +64,10 @@ public class BpcsEncoder {
 
   public boolean hasAlpha() {
     return hasAlpha;
+  }
+
+  public boolean isRandom() {
+    return (random == null);
   }
 
   //------------------------------------------------------------------------------------------------
@@ -125,6 +149,75 @@ public class BpcsEncoder {
   //------------------------------------------------------------------------------------------------
   //endregion
 
+  //region Message hiding
+  //------------------------------------------------------------------------------------------------
+
+  public void encodeMessageInImage(Message message) throws SizeLimitExceededException {
+    byte[] bytes = message.getEncodedMessage();
+
+    int n = -1;
+    for (int i = 0; i < bytes.length; i += 8) {
+      n = nextSequence(n);
+      if (n == -1)
+        throw new SizeLimitExceededException("Encoded message exceeds capacity");
+
+      int[] idx = getPlaneIndices(n);
+      if (imageSegmentsComplexity[idx[0]][idx[1]][idx[2]][idx[3]] < threshold)
+        continue;
+
+      encodeMessageInSegment(bytes, i, imageSegments[idx[0]][idx[1]], idx[2], idx[3]);
+    }
+
+  }
+
+  private void encodeMessageInSegment(byte[] data, int startIndex, BufferedImage segment, int channel, int bitplane) {
+    byte[] imageData =
+        ((DataBufferByte) segment.getRaster().getDataBuffer()).getData();
+
+    for (int i = 0; i < 8; ++i) {
+      for (int j = 0; j < 8; ++j) {
+        boolean b = getBit(data[startIndex + i], j);
+        int idx = getIndex(i, j, channel);
+        imageData[idx] = setBit(imageData[idx], b, j);
+      }
+    }
+  }
+
+  private int nextSequence(int prev) {
+    if (embeddedSet.size() >= numOfPlanes)
+      return -1;
+
+    int n;
+    if (isRandom()) {
+      do {
+        n = random.nextInt(numOfPlanes);
+      } while (embeddedSet.contains(n));
+    } else {
+      n = prev + 1;
+    }
+    embeddedSet.add(n);
+    return n;
+  }
+
+  private int[] getPlaneIndices(int seq) {
+    int temp[] = new int[4];
+
+    temp[3] = seq % 8;
+    seq /= 8;
+
+    temp[2] = seq % numOfChannels;
+    seq /= numOfChannels;
+
+    temp[1] = seq % image.getWidth();
+    seq /= image.getWidth();
+
+    temp[0] = seq % image.getHeight();
+    return temp;
+  }
+
+  //------------------------------------------------------------------------------------------------
+  //endregion
+
   //region Utility functions
   //------------------------------------------------------------------------------------------------
 
@@ -134,6 +227,14 @@ public class BpcsEncoder {
 
   private static boolean getBit(byte value, int position) {
     return ((value & (1 << position)) != 0);
+  }
+
+  private static byte setBit(byte b, boolean value, int position) {
+    int temp = Byte.toUnsignedInt(b);
+    if (value)
+      return (byte) (temp | (1 << position));
+    else
+      return (byte) (temp & ~(1 << position));
   }
 
   //------------------------------------------------------------------------------------------------

@@ -34,7 +34,7 @@ public class Message {
     encoded = true;
   }
 
-  public void encodeMessage() {
+  public Message encodeMessage() {
     if (!encoded) {
       processMessageEncoding();
       calculateMessageComplexity();
@@ -42,19 +42,25 @@ public class Message {
       encodeConjugationMap();
       encoded = true;
     }
+    return this;
   }
 
-  public void decodeMessage() {
+  public Message decodeMessage() {
     if (encoded) {
       decodeConjugationMap();
       deconjugateMessage();
       processMessageDecoding();
       encoded = false;
     }
+    return this;
   }
 
   public boolean isEncoded() {
     return encoded;
+  }
+
+  public byte[] getEncodedMessage() {
+    return encodedMessage;
   }
 
   //------------------------------------------------------------------------------------------------
