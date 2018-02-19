@@ -157,17 +157,16 @@ public class BpcsEncoder {
 
     int n = -1;
     for (int i = 0; i < bytes.length; i += 8) {
-      n = nextSequence(n);
-      if (n == -1)
-        throw new SizeLimitExceededException("Encoded message exceeds capacity");
-
-      int[] idx = getPlaneIndices(n);
-      if (imageSegmentsComplexity[idx[0]][idx[1]][idx[2]][idx[3]] < threshold)
-        continue;
+      int[] idx;
+      do {
+        n = calculateNextSequence(n);
+        if (n == -1)
+          throw new SizeLimitExceededException("Encoded message exceeds capacity");
+        idx = getPlaneIndices(n);
+      } while (imageSegmentsComplexity[idx[0]][idx[1]][idx[2]][idx[3]] < threshold);
 
       encodeMessageInSegment(bytes, i, imageSegments[idx[0]][idx[1]], idx[2], idx[3]);
     }
-
   }
 
   private void encodeMessageInSegment(byte[] data, int startIndex, BufferedImage segment, int channel, int bitplane) {
@@ -178,12 +177,58 @@ public class BpcsEncoder {
       for (int j = 0; j < 8; ++j) {
         boolean b = getBit(data[startIndex + i], j);
         int idx = getIndex(i, j, channel);
-        imageData[idx] = setBit(imageData[idx], b, j);
+        imageData[idx] = setBit(imageData[idx], b, bitplane);
       }
     }
   }
 
-  private int nextSequence(int prev) {
+  public Message extractMessageFromImage() throws SizeLimitExceededException {
+    int n = -1;
+    int[] idx;
+
+    // Get first block of message
+    do {
+      n = calculateNextSequence(n);
+      if (n == -1)
+        throw new SizeLimitExceededException("Encoded message exceeds capacity");
+      idx = getPlaneIndices(n);
+    } while (imageSegmentsComplexity[idx[0]][idx[1]][idx[2]][idx[3]] < threshold);
+
+    // Extract message length from header
+    byte[] messageLength = new byte[8];
+    extractMessageFromSegment(messageLength, 0, imageSegments[idx[0]][idx[1]], idx[2], idx[3]);
+    int len = Message.decodeMessageLengthHeader(messageLength);
+    byte[] messageData = new byte[len];
+
+    // Extract rest of message
+    for (int i = 0; i < messageData.length; i += 8) {
+      do {
+        n = calculateNextSequence(n);
+        if (n == -1)
+          throw new SizeLimitExceededException("Encoded message exceeds capacity");
+        idx = getPlaneIndices(n);
+      } while (imageSegmentsComplexity[idx[0]][idx[1]][idx[2]][idx[3]] < threshold);
+
+      extractMessageFromSegment(messageData, i, imageSegments[idx[0]][idx[1]], idx[2], idx[3]);
+    }
+
+    return new Message(messageData, threshold);
+  }
+
+  private void extractMessageFromSegment(byte[] data, int startIndex, BufferedImage segment, int channel, int bitplane) {
+    byte[] imageData =
+        ((DataBufferByte) segment.getRaster().getDataBuffer()).getData();
+
+    for (int i = 0; i < 8; ++i) {
+      for (int j = 0; j< 8; ++j) {
+        int idx = getIndex(i, j, channel);
+        boolean b = getBit(imageData[idx], bitplane);
+        data[i] = setBit(data[startIndex + i], b, j);
+      }
+    }
+  }
+
+  private int calculateNextSequence(int prev) {
     if (embeddedSet.size() >= numOfPlanes)
       return -1;
 

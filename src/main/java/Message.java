@@ -28,9 +28,10 @@ public class Message {
     encoded = false;
   }
 
-  public Message(byte[] encodedMessage) {
+  public Message(byte[] encodedMessage, int threshold) {
     this.encodedMessage = new byte[encodedMessage.length];
     System.arraycopy(encodedMessage, 0, this.encodedMessage, 0, encodedMessage.length);
+    this.threshold = threshold;
     encoded = true;
   }
 
@@ -167,7 +168,7 @@ public class Message {
     }
   }
 
-  private void conjugateBlock(byte[] data, int startIndex) {
+  private static void conjugateBlock(byte[] data, int startIndex) {
     for (int i = startIndex; i < startIndex + 7; ++i) {
       int temp = Byte.toUnsignedInt(data[i]);
       temp ^= checkerboard[i % 2];
@@ -216,10 +217,26 @@ public class Message {
       }
     }
 
+    // Add message length header
+    byte[] lenHeader = new byte[8];
+    len = conjugationBlock.length + encodedMessage.length;
+    lenHeader[0] = lenHeader[5] = lenHeader[6] = lenHeader[7] = 0;
+    lenHeader[1] = (byte) (len >> 24);
+    lenHeader[2] = (byte) (len >> 16);
+    lenHeader[3] = (byte) (len >> 8);
+    lenHeader[4] = (byte) (len);
+
+    // Conjugate message length header
+    int complexity = calculateSegmentComplexity(lenHeader, 0);
+    if (complexity < threshold) {
+      conjugateBlock(lenHeader, 0);
+    }
+
     // Concatenate with message
-    byte[] temp = new byte[conjugationBlock.length + encodedMessage.length];
-    System.arraycopy(conjugationBlock, 0, temp, 0, conjugationBlock.length);
-    System.arraycopy(encodedMessage, 0, temp, conjugationBlock.length, encodedMessage.length);
+    byte[] temp = new byte[conjugationBlock.length + encodedMessage.length + 8];
+    System.arraycopy(lenHeader, 0, temp, 0, 8);
+    System.arraycopy(conjugationBlock, 0, temp, 8, conjugationBlock.length);
+    System.arraycopy(encodedMessage, 0, temp, conjugationBlock.length + 8, encodedMessage.length);
     encodedMessage = temp;
   }
 
@@ -260,6 +277,21 @@ public class Message {
     byte[] msg = new byte[encodedMessage.length - (++n)];
     System.arraycopy(encodedMessage, n, msg, 0, msg.length);
     encodedMessage = msg;
+  }
+
+  public static int decodeMessageLengthHeader(byte[] lengthHeader) {
+    if (lengthHeader.length != 8)
+      throw new IllegalArgumentException("Length header must have length of 8");
+
+    // Conjugate first block if necessary
+    if (getBit(lengthHeader[0], 0)) {
+      conjugateBlock(lengthHeader, 0);
+    }
+
+    return lengthHeader[1] << 24
+        | (lengthHeader[2] & 0xFF) << 16
+        | (lengthHeader[3] & 0xFF) << 8
+        | (lengthHeader[4] & 0xFF);
   }
 
   //------------------------------------------------------------------------------------------------
