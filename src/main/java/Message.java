@@ -1,12 +1,17 @@
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.stream.IntStream;
 
 public class Message {
 
+  // Checkerboard pattern in binary integer
   private final static int checkerboard[] = {
       0b01010101, 0b10101010
   };
+
+  // Maximum complexity for a 8x8 image (checkerboard pattern)
+  private final static int maxComplexity = 112;
 
   private String filename;
   private byte[] message;
@@ -28,11 +33,19 @@ public class Message {
     encoded = false;
   }
 
+  public Message(String filename, byte[] message, float threshold) {
+    this(filename, message, (int) (threshold * maxComplexity));
+  }
+
   public Message(byte[] encodedMessage, int threshold) {
     this.encodedMessage = new byte[encodedMessage.length];
     System.arraycopy(encodedMessage, 0, this.encodedMessage, 0, encodedMessage.length);
     this.threshold = threshold;
     encoded = true;
+  }
+
+  public Message(byte[] encodedMessage, float threshold) {
+    this(encodedMessage, (int) (threshold * maxComplexity));
   }
 
   public Message encodeMessage() {
@@ -49,6 +62,11 @@ public class Message {
   public Message decodeMessage() {
     if (encoded) {
       decodeConjugationMap();
+
+      for (boolean b: conjugationMap) {
+        System.out.println(b);
+      }
+
       deconjugateMessage();
       processMessageDecoding();
       encoded = false;
@@ -58,6 +76,14 @@ public class Message {
 
   public boolean isEncoded() {
     return encoded;
+  }
+
+  public String getFilename() {
+    return filename;
+  }
+
+  public byte[] getMessage() {
+    return message;
   }
 
   public byte[] getEncodedMessage() {
@@ -105,8 +131,8 @@ public class Message {
 
   private void calculateMessageComplexity() {
     messageSegmentComplexity = new int[encodedMessage.length / 8];
-    for (int i = 0; i < encodedMessage.length; i += 8) {
-      messageSegmentComplexity[i] = calculateSegmentComplexity(encodedMessage, i);
+    for (int i = 0; i < messageSegmentComplexity.length; ++i) {
+      messageSegmentComplexity[i] = calculateSegmentComplexity(encodedMessage, i * 8);
     }
   }
 
@@ -196,14 +222,24 @@ public class Message {
 
     // Construct conjugation list
     int n = 5;
-    for (boolean b: conjugationMap) {
-      byte temp = 0;
-      for (int i = ((n % 8 == 0) ? 1 : 0); i < 8; ++i) {
-        temp = setBit(temp, b, i);
+    int j = 0;
+    byte temp = 0;
+    for (int i = 0; i < len; ++i) {
+      if (j >= 8) {
+        conjugationList.add(temp);
+        temp = 0;
+        j = 0;
+        n++;
       }
-      conjugationList.add(temp);
-      n++;
+
+      // Leave bit for conjugation flag
+      if (n % 8 == 0 && j == 0) {
+        j++;
+      }
+
+      temp = setBit(temp, conjugationMap[i], j++);
     }
+    conjugationList.add(temp);
 
     // Convert to byte array, padding
     byte[] conjugationBlock = toByteArray(conjugationList);
@@ -233,11 +269,11 @@ public class Message {
     }
 
     // Concatenate with message
-    byte[] temp = new byte[conjugationBlock.length + encodedMessage.length + 8];
-    System.arraycopy(lenHeader, 0, temp, 0, 8);
-    System.arraycopy(conjugationBlock, 0, temp, 8, conjugationBlock.length);
-    System.arraycopy(encodedMessage, 0, temp, conjugationBlock.length + 8, encodedMessage.length);
-    encodedMessage = temp;
+    byte[] concatedMessage = new byte[conjugationBlock.length + encodedMessage.length + 8];
+    System.arraycopy(lenHeader, 0, concatedMessage, 0, 8);
+    System.arraycopy(conjugationBlock, 0, concatedMessage, 8, conjugationBlock.length);
+    System.arraycopy(encodedMessage, 0, concatedMessage, conjugationBlock.length + 8, encodedMessage.length);
+    encodedMessage = concatedMessage;
   }
 
   private void decodeConjugationMap() {
@@ -273,8 +309,12 @@ public class Message {
       conjugationMap[i] = getBit(encodedMessage[n], j++);
     }
 
+    // Skip padding
+    while (n % 8 != 0)
+      n++;
+
     // Extract message
-    byte[] msg = new byte[encodedMessage.length - (++n)];
+    byte[] msg = new byte[encodedMessage.length - n];
     System.arraycopy(encodedMessage, n, msg, 0, msg.length);
     encodedMessage = msg;
   }
@@ -305,13 +345,14 @@ public class Message {
       return b;
 
     byte[] padded = new byte[b.length + (8 - (b.length % 8))];
+    Arrays.fill(padded, (byte) 0);
     System.arraycopy(b, 0, padded, 0, b.length);
     return padded;
   }
 
   private static byte[] removePadding(byte[] b) {
     int i = b.length - 1;
-    while (b[i] != 0)
+    while (b[i] == 0)
       i--;
 
     int len = i + 1;
