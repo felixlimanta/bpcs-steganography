@@ -1,7 +1,5 @@
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.stream.IntStream;
 
 public class Message {
 
@@ -101,13 +99,13 @@ public class Message {
     System.arraycopy(filenameBytes, 0, b, 2, len);
 
     System.arraycopy(message, 0, b, len + 2, message.length);
-    b = addPadding(b);
+    b = Utility.addPadding(b);
     encodedMessage = GreyCodeConverter.toGreyCode(b);
   }
 
   private void processMessageDecoding() {
     byte[] b = GreyCodeConverter.toBinary(encodedMessage);
-    b = removePadding(b);
+    b = Utility.removePadding(b);
 
     int len = ((b[0] & 0xff) << 8) + (b[1] & 0xff);
     byte[] filename = new byte[len];
@@ -136,9 +134,9 @@ public class Message {
     boolean b1, b2, b3;
     for (int i = startIndex; i < startIndex + 7; ++i) {
       for (int j = 0; j < 7; ++j) {
-        b1 = getBit(data[i], j);
-        b2 = getBit(data[i], j + 1);
-        b3 = getBit(data[i + 1], j);
+        b2 = Utility.getBit(data[i], j + 1);
+        b1 = Utility.getBit(data[i], j);
+        b3 = Utility.getBit(data[i + 1], j);
 
         if (b1 ^ b2)
           n++;
@@ -146,16 +144,16 @@ public class Message {
           n++;
       }
 
-      b1 = getBit(data[i], 7);
-      b3 = getBit(data[i + 1], 7);
+      b1 = Utility.getBit(data[i], 7);
+      b3 = Utility.getBit(data[i + 1], 7);
 
       if (b1 ^ b3)
         n++;
     }
 
     for (int j = 0; j < 7; ++j) {
-      b1 = getBit(data[startIndex + 7], j);
-      b2 = getBit(data[startIndex + 7], j + 1);
+      b1 = Utility.getBit(data[startIndex + 7], j);
+      b2 = Utility.getBit(data[startIndex + 7], j + 1);
 
       if (b1 ^ b2)
         n++;
@@ -232,13 +230,13 @@ public class Message {
         j++;
       }
 
-      temp = setBit(temp, conjugationMap[i], j++);
+      temp = Utility.setBit(temp, conjugationMap[i], j++);
     }
     conjugationList.add(temp);
 
     // Convert to byte array, padding
-    byte[] conjugationBlock = toByteArray(conjugationList);
-    conjugationBlock = addPadding(conjugationBlock);
+    byte[] conjugationBlock = Utility.toByteArray(conjugationList);
+    conjugationBlock = Utility.addPadding(conjugationBlock);
 
     // Conjugate conjugation block
     for (int i = 0; i < conjugationBlock.length; i += 8) {
@@ -273,7 +271,7 @@ public class Message {
 
   private void decodeConjugationMap() {
     // Conjugate first block if necessary
-    if (getBit(encodedMessage[0], 0)) {
+    if (Utility.getBit(encodedMessage[0], 0)) {
       conjugateBlock(encodedMessage, 0);
     }
 
@@ -295,13 +293,13 @@ public class Message {
 
       // Conjugate block if flag is set
       if (n % 8 == 0 && j == 0) {
-        if (getBit(encodedMessage[n], 0)) {
+        if (Utility.getBit(encodedMessage[n], 0)) {
           conjugateBlock(encodedMessage, n);
         }
         j++;
       }
 
-      conjugationMap[i] = getBit(encodedMessage[n], j++);
+      conjugationMap[i] = Utility.getBit(encodedMessage[n], j++);
     }
 
     // Skip padding
@@ -319,7 +317,7 @@ public class Message {
       throw new IllegalArgumentException("Length header must have length of 8");
 
     // Conjugate first block if necessary
-    if (getBit(lengthHeader[0], 0)) {
+    if (Utility.getBit(lengthHeader[0], 0)) {
       conjugateBlock(lengthHeader, 0);
     }
 
@@ -327,52 +325,6 @@ public class Message {
         | (lengthHeader[2] & 0xFF) << 16
         | (lengthHeader[3] & 0xFF) << 8
         | (lengthHeader[4] & 0xFF);
-  }
-
-  //------------------------------------------------------------------------------------------------
-  //endregion
-
-  //region Utility functions
-  //------------------------------------------------------------------------------------------------
-
-  private static byte[] addPadding(byte[] b) {
-    if (b.length % 8 == 0)
-      return b;
-
-    byte[] padded = new byte[b.length + (8 - (b.length % 8))];
-    Arrays.fill(padded, (byte) 0);
-    System.arraycopy(b, 0, padded, 0, b.length);
-    return padded;
-  }
-
-  private static byte[] removePadding(byte[] b) {
-    int i = b.length - 1;
-    while (b[i] == 0)
-      i--;
-
-    int len = i + 1;
-    byte[] depadded = new byte[len];
-    System.arraycopy(b, 0, depadded, 0, len);
-    return depadded;
-  }
-
-  private static boolean getBit(byte value, int position) {
-    return ((value & (1 << position)) != 0);
-  }
-
-  private static byte setBit(byte b, boolean value, int position) {
-    int temp = Byte.toUnsignedInt(b);
-    if (value)
-      return (byte) (temp | (1 << position));
-    else
-      return (byte) (temp & ~(1 << position));
-  }
-
-  private static byte[] toByteArray(ArrayList<Byte> list) {
-    Byte[] array = list.toArray(new Byte[list.size()]);
-    byte[] byteArray = new byte[array.length];
-    IntStream.range(0, array.length).forEach(i -> byteArray[i] = array[i]);
-    return byteArray;
   }
 
   //------------------------------------------------------------------------------------------------

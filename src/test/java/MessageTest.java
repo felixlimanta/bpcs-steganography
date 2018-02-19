@@ -64,9 +64,4 @@ public class MessageTest {
     assertEquals(path, m2.getFilename());
     assertArrayEquals(orig, m2.getMessage());
   }
-
-  private String toBinaryString(byte b) {
-    return String.format("%8s", Integer.toBinaryString(Byte.toUnsignedInt(b)))
-        .replace(' ', '0');
-  }
 }

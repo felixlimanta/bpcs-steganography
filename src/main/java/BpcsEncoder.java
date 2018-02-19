@@ -40,12 +40,16 @@ public class BpcsEncoder {
     this.embeddedSet = new HashSet<>();
     this.threshold = (int) (threshold * maxComplexity);
     this.numOfPlanes = image.getWidth() * image.getHeight() * numOfChannels * 8;
+
+    segmentImage();
   }
 
   public BpcsEncoder(BufferedImage image, float threshold, String key) {
     this(image, threshold);
     this.key = key;
     this.random = new Random(key.hashCode());
+
+    segmentImage();
   }
 
   //------------------------------------------------------------------------------------------------
@@ -122,23 +126,23 @@ public class BpcsEncoder {
 
     for (int i = 0; i < 7; ++i) {
       for (int j = 0; j < 7; ++j) {
-        b1 = getBit(data[getIndex(i, j, channel)], bitplane);
-        b2 = getBit(data[getIndex(i, j + 1, channel)], bitplane);
-        b3 = getBit(data[getIndex(i + 1, j, channel)], bitplane);
+        b1 = Utility.getBit(data[getIndex(i, j, channel)], bitplane);
+        b2 = Utility.getBit(data[getIndex(i, j + 1, channel)], bitplane);
+        b3 = Utility.getBit(data[getIndex(i + 1, j, channel)], bitplane);
 
         if (b1 ^ b2) n++;
         if (b1 ^ b3) n++;
       }
 
-      b1 = getBit(data[getIndex(i, 7, channel)], bitplane);
-      b3 = getBit(data[getIndex(i + 1, 7, channel)], bitplane);
+      b1 = Utility.getBit(data[getIndex(i, 7, channel)], bitplane);
+      b3 = Utility.getBit(data[getIndex(i + 1, 7, channel)], bitplane);
 
       if (b1 ^ b3) n++;
     }
 
     for (int j = 0; j < image.getWidth() - 1; ++j) {
-      b1 = getBit(data[getIndex(7, j, channel)], bitplane);
-      b2 = getBit(data[getIndex(7, j + 1, channel)], bitplane);
+      b1 = Utility.getBit(data[getIndex(7, j, channel)], bitplane);
+      b2 = Utility.getBit(data[getIndex(7, j + 1, channel)], bitplane);
 
       if (b1 ^ b2) n++;
     }
@@ -152,7 +156,7 @@ public class BpcsEncoder {
   //region Message hiding
   //------------------------------------------------------------------------------------------------
 
-  public void encodeMessageInImage(Message message) throws SizeLimitExceededException {
+  public BpcsEncoder encodeMessageInImage(Message message) throws SizeLimitExceededException {
     byte[] bytes = message.getEncodedMessage();
 
     int n = -1;
@@ -167,6 +171,7 @@ public class BpcsEncoder {
 
       encodeMessageInSegment(bytes, i, imageSegments[idx[0]][idx[1]], idx[2], idx[3]);
     }
+    return this;
   }
 
   private void encodeMessageInSegment(byte[] data, int startIndex, BufferedImage segment, int channel, int bitplane) {
@@ -175,9 +180,9 @@ public class BpcsEncoder {
 
     for (int i = 0; i < 8; ++i) {
       for (int j = 0; j < 8; ++j) {
-        boolean b = getBit(data[startIndex + i], j);
+        boolean b = Utility.getBit(data[startIndex + i], j);
         int idx = getIndex(i, j, channel);
-        imageData[idx] = setBit(imageData[idx], b, bitplane);
+        imageData[idx] = Utility.setBit(imageData[idx], b, bitplane);
       }
     }
   }
@@ -222,8 +227,8 @@ public class BpcsEncoder {
     for (int i = 0; i < 8; ++i) {
       for (int j = 0; j< 8; ++j) {
         int idx = getIndex(i, j, channel);
-        boolean b = getBit(imageData[idx], bitplane);
-        data[i] = setBit(data[startIndex + i], b, j);
+        boolean b = Utility.getBit(imageData[idx], bitplane);
+        data[i] = Utility.setBit(data[startIndex + i], b, j);
       }
     }
   }
@@ -268,18 +273,6 @@ public class BpcsEncoder {
 
   private int getIndex(int r, int c, int channel) {
     return (r * 8 + c) * numOfChannels + channel;
-  }
-
-  private static boolean getBit(byte value, int position) {
-    return ((value & (1 << position)) != 0);
-  }
-
-  private static byte setBit(byte b, boolean value, int position) {
-    int temp = Byte.toUnsignedInt(b);
-    if (value)
-      return (byte) (temp | (1 << position));
-    else
-      return (byte) (temp & ~(1 << position));
   }
 
   //------------------------------------------------------------------------------------------------
