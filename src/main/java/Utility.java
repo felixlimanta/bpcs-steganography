@@ -1,8 +1,58 @@
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.WritableRaster;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.IntStream;
+import javax.imageio.ImageIO;
 
 public class Utility {
+
+  public static BufferedImage loadImage(String path) throws IOException {
+    return ImageIO.read(new File(path));
+  }
+
+  public static void saveImage(BufferedImage image, String path) throws IOException {
+    String extension = getFileExtension(path);
+    ImageIO.write(image, extension, new File(path));
+  }
+
+  public static byte[] loadFile(String path) throws IOException {
+    return Files.readAllBytes(Paths.get(path));
+  }
+
+  public static String getFileExtension(String path) {
+    try {
+      return path.substring(path.lastIndexOf(".") + 1);
+    } catch (Exception e) {
+      return "";
+    }
+  }
+
+  public static BufferedImage deepCopy(BufferedImage bi) {
+    ColorModel cm = bi.getColorModel();
+    boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
+    WritableRaster raster = bi.copyData(bi.getRaster().createCompatibleWritableRaster());
+    return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
+  }
+
+  public static boolean isEqual(BufferedImage img1, BufferedImage img2) {
+    if (img1.getWidth() == img2.getWidth() && img1.getHeight() == img2.getHeight()) {
+      for (int x = 0; x < img1.getWidth(); x++) {
+        for (int y = 0; y < img1.getHeight(); y++) {
+          if (img1.getRGB(x, y) != img2.getRGB(x, y))
+            return false;
+        }
+      }
+    } else {
+      return false;
+    }
+    return true;
+  }
 
   public static String toBinaryString(byte b) {
     return String.format("%8s", Integer.toBinaryString(Byte.toUnsignedInt(b)))

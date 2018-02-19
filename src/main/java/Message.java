@@ -188,9 +188,9 @@ public class Message {
   }
 
   private static void conjugateBlock(byte[] data, int startIndex) {
-    for (int i = startIndex; i < startIndex + 7; ++i) {
+    for (int i = startIndex; i < startIndex + 8; ++i) {
       int temp = Byte.toUnsignedInt(data[i]);
-      temp ^= checkerboard[i % 2];
+//      temp ^= checkerboard[i % 2];
       data[i] = (byte) temp;
     }
   }
@@ -316,15 +316,18 @@ public class Message {
     if (lengthHeader.length != 8)
       throw new IllegalArgumentException("Length header must have length of 8");
 
+    byte[] len = new byte[8];
+    System.arraycopy(lengthHeader, 0, len, 0, 8);
+
     // Conjugate first block if necessary
-    if (Utility.getBit(lengthHeader[0], 0)) {
-      conjugateBlock(lengthHeader, 0);
+    if (Utility.getBit(len[0], 0)) {
+      conjugateBlock(len, 0);
     }
 
-    return lengthHeader[1] << 24
-        | (lengthHeader[2] & 0xFF) << 16
-        | (lengthHeader[3] & 0xFF) << 8
-        | (lengthHeader[4] & 0xFF);
+    return len[1] << 24
+        | (len[2] & 0xFF) << 16
+        | (len[3] & 0xFF) << 8
+        | (len[4] & 0xFF);
   }
 
   //------------------------------------------------------------------------------------------------

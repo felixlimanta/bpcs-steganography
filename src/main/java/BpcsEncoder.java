@@ -1,3 +1,5 @@
+import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.util.HashSet;
@@ -34,14 +36,16 @@ public class BpcsEncoder {
   //------------------------------------------------------------------------------------------------
 
   public BpcsEncoder(BufferedImage image, float threshold) {
-    this.image = image;
+    this.image = Utility.deepCopy(image);
     this.numOfChannels = image.getRaster().getNumBands();
     this.hasAlpha = image.getColorModel().hasAlpha();
     this.embeddedSet = new HashSet<>();
     this.threshold = (int) (threshold * maxComplexity);
     this.numOfPlanes = image.getWidth() * image.getHeight() * numOfChannels * 8;
 
+    toGreyCode();
     segmentImage();
+    toBinary();
   }
 
   public BpcsEncoder(BufferedImage image, float threshold, String key) {
@@ -49,7 +53,19 @@ public class BpcsEncoder {
     this.key = key;
     this.random = new Random(key.hashCode());
 
+    toGreyCode();
     segmentImage();
+    toBinary();
+  }
+
+  private void toGreyCode() {
+    byte[] data = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
+    System.arraycopy(GreyCodeConverter.toGreyCode(data), 0, data, 0, data.length);
+  }
+
+  private void toBinary() {
+    byte[] data = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
+    System.arraycopy(GreyCodeConverter.toBinary(data), 0, data, 0, data.length);
   }
 
   //------------------------------------------------------------------------------------------------
@@ -71,7 +87,7 @@ public class BpcsEncoder {
   }
 
   public boolean isRandom() {
-    return (random == null);
+    return (random != null);
   }
 
   //------------------------------------------------------------------------------------------------
@@ -80,7 +96,7 @@ public class BpcsEncoder {
   //region Image Segmentation
   //------------------------------------------------------------------------------------------------
 
-  public void segmentImage() {
+  private void segmentImage() {
     int h = image.getHeight() / 8;
     int w = image.getWidth() / 8;
 
@@ -95,7 +111,8 @@ public class BpcsEncoder {
         imageSegments[i][j] = image.getSubimage(j * 8, i * 8, 8, 8);
         imageSegmentsComplexity[i][j] = new int[numOfChannels][];
         byte[] data =
-            ((DataBufferByte) imageSegments[i][j].getRaster().getDataBuffer()).getData();
+            ((DataBufferByte) imageSegments[i][j]
+                .getData(new Rectangle(0, 0, 8, 8)).getDataBuffer()).getData();
 
         for (int k = 0; k < numOfChannels; ++k) {
           imageSegmentsComplexity[i][j][k] = new int[8];
@@ -107,22 +124,31 @@ public class BpcsEncoder {
     }
   }
 
+  public void combineImage() {
+    BufferedImage result = new BufferedImage(
+        image.getWidth(), image.getHeight(), image.getType());
+    Graphics g = result.getGraphics();
+
+    for (int i = 0; i < imageSegments.length; ++i) {
+      for (int j = 0; j < imageSegments[i].length; ++j) {
+        g.drawImage(imageSegments[i][j], j * 8, i * 8, null);
+      }
+    }
+    image = result;
+  }
+
   //------------------------------------------------------------------------------------------------
   //endregion
 
   //region Complexity Calculation
   //------------------------------------------------------------------------------------------------
 
-  public int calculateComplexity(byte[] data, int channel, int bitplane) {
-    if (data.length != 64) {
-      throw new IllegalArgumentException("Data length must be 64 (from a 8x8 image)");
-    }
-
+  private int calculateComplexity(byte[] data, int channel, int bitplane) {
     if (bitplane < 0 || bitplane > 7)
       throw new IllegalArgumentException("Bitplane parameter must range from 0 to 7");
 
     int n = 0;
-    boolean b1, b2, b3;
+    boolean b1, b2 = false, b3;
 
     for (int i = 0; i < 7; ++i) {
       for (int j = 0; j < 7; ++j) {
@@ -140,7 +166,7 @@ public class BpcsEncoder {
       if (b1 ^ b3) n++;
     }
 
-    for (int j = 0; j < image.getWidth() - 1; ++j) {
+    for (int j = 0; j < 7; ++j) {
       b1 = Utility.getBit(data[getIndex(7, j, channel)], bitplane);
       b2 = Utility.getBit(data[getIndex(7, j + 1, channel)], bitplane);
 
@@ -174,7 +200,7 @@ public class BpcsEncoder {
     return this;
   }
 
-  private void encodeMessageInSegment(byte[] data, int startIndex, BufferedImage segment, int channel, int bitplane) {
+  void encodeMessageInSegment(byte[] data, int startIndex, BufferedImage segment, int channel, int bitplane) {
     byte[] imageData =
         ((DataBufferByte) segment.getRaster().getDataBuffer()).getData();
 
@@ -220,15 +246,15 @@ public class BpcsEncoder {
     return new Message(messageData, threshold);
   }
 
-  private void extractMessageFromSegment(byte[] data, int startIndex, BufferedImage segment, int channel, int bitplane) {
+  void extractMessageFromSegment(byte[] data, int startIndex, BufferedImage segment, int channel, int bitplane) {
     byte[] imageData =
         ((DataBufferByte) segment.getRaster().getDataBuffer()).getData();
 
     for (int i = 0; i < 8; ++i) {
-      for (int j = 0; j< 8; ++j) {
+      for (int j = 0; j < 8; ++j) {
         int idx = getIndex(i, j, channel);
         boolean b = Utility.getBit(imageData[idx], bitplane);
-        data[i] = Utility.setBit(data[startIndex + i], b, j);
+        data[startIndex + i] = Utility.setBit(data[startIndex + i], b, j);
       }
     }
   }

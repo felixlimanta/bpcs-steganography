@@ -1,31 +1,88 @@
+import static org.junit.Assert.assertArrayEquals;
+
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
-import javax.imageio.ImageIO;
-import org.junit.Before;
+import javax.naming.SizeLimitExceededException;
 import org.junit.Test;
 
 public class BpcsEncoderTest {
 
-  private static final String path = "C:\\Users\\ASUS\\Downloads\\64166790_p0.jpg";
-  BpcsEncoder bpcsEncoder;
-  float threshold = (float) 0.3;
+  private static final String path = "C:\\Users\\ASUS\\Downloads\\zkVHgAM.png";
+  private float threshold = (float) 0.3;
 
-  @Before
-  public void setUp() throws Exception {
-    BufferedImage image = ImageIO.read(new File(path));
-    bpcsEncoder = new BpcsEncoder(image, threshold * 112);
+  @Test
+  public void segmentEncodingTest() throws IOException {
+    BufferedImage image = Utility.loadImage(path);
+    BufferedImage imageSegment = image.getSubimage(0, 0, 8, 8);
+
+    String messagePath = "C:\\Users\\ASUS\\Downloads\\31P828KVQV.txt";
+    byte[] messageData = Utility.loadFile(messagePath);
+    Message message = new Message(messagePath, messageData, threshold).encodeMessage();
+    messageData = message.getEncodedMessage();
+
+    byte[] origMessage = new byte[8];
+    System.arraycopy(messageData, 0, origMessage, 0, 8);
+
+    BpcsEncoder bpcsEncoder = new BpcsEncoder(imageSegment, threshold);
+    bpcsEncoder.encodeMessageInSegment(messageData, 0, imageSegment, 0, 0);
+
+    byte[] extractedMessage = new byte[8];
+    bpcsEncoder.extractMessageFromSegment(extractedMessage, 0, imageSegment, 0, 0);
+//    System.out.println(Message.decodeMessageLengthHeader(extractedMessage));
+
+    assertArrayEquals(origMessage, extractedMessage);
   }
 
   @Test
-  public void checkNoOfChannels() throws IOException {
-    String path1 = "C:\\Users\\ASUS\\Downloads\\64166790_p0 - Copy.jpg";
-    String path2 = "D:\\My Documents\\Work\\Kuliah\\ITB_1.png";
-    String path3 = "D:\\My Documents\\Work\\Kuliah\\ITB_2a.png";
+  public void encodingTest() throws IOException, SizeLimitExceededException {
+    String path1 = "C:\\Users\\ASUS\\Downloads\\zkVHgAM_1.png";
 
-    System.out.printf("Channels: %d\n", bpcsEncoder.getImage().getRaster().getNumBands());
-    System.out.printf("Channels: %d\n", ImageIO.read(new File(path1)).getRaster().getNumBands());
-    System.out.printf("Channels: %d\n", ImageIO.read(new File(path2)).getRaster().getNumBands());
-    System.out.printf("Channels: %d\n", ImageIO.read(new File(path3)).getRaster().getNumBands());
+    BufferedImage image = Utility.loadImage(path);
+    BpcsEncoder bpcsEncoder = new BpcsEncoder(image, threshold);
+
+    String messagePath = "C:\\Users\\ASUS\\Downloads\\31P828KVQV.txt";
+    byte[] messageData = Utility.loadFile(messagePath);
+    Message message = new Message(messagePath, messageData, threshold).encodeMessage();
+
+    bpcsEncoder.encodeMessageInImage(message);
+    bpcsEncoder.combineImage();
+    Utility.saveImage(bpcsEncoder.getImage(), path1);
+
+    BufferedImage image1 = Utility.loadImage(path1);
+    BpcsEncoder bpcsDecoder = new BpcsEncoder(image1, threshold);
+    Message decodedMessage = bpcsDecoder.extractMessageFromImage();
+//
+//    System.out.println(Utility.isEqual(bpcsEncoder.bimage, bpcsDecoder.bimage));
+//    byte[] b1 = ((DataBufferByte) bpcsEncoder.bimage.getRaster().getDataBuffer()).getData();
+//    byte[] b2 = ((DataBufferByte) bpcsDecoder.bimage.getRaster().getDataBuffer()).getData();
+//    assertArrayEquals(b1, b2);
+
+//
+//    byte[] orig = new byte[8];
+//    System.arraycopy(message.getEncodedMessage(), 0, orig, 0, 8);
+////    bpcsEncoder.encodeMessageInSegment(orig, 0, bpcsDecoder.bimage, 0, 0);
+//
+//    System.out.println();
+//    for (int k = 0; k < 8; ++k) {
+//      System.out.println(Utility.toBinaryString(orig[k]));
+//    }
+//    System.out.println();
+//
+//    byte[] extracted = new byte[8];
+////    bpcsEncoder.extractMessageFromSegment(extracted, 0, bpcsEncoder.bimage, 0, 0);
+//    extracted = bpcsEncoder.extracted;
+//
+//    System.out.println();
+//    for (int k = 0; k < 8; ++k) {
+//      System.out.println(Utility.toBinaryString(extracted[k]));
+//    }
+//    System.out.println();
+//
+//    System.out.println(Message.decodeMessageLengthHeader(extracted));
+//
+//    assertArrayEquals(orig, extracted);
+//
+//    assertEquals(messagePath, decodedMessage.getFilename());
+//    assertArrayEquals(messageData, decodedMessage.getMessage());
   }
 }
