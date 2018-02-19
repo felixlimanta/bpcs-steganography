@@ -62,11 +62,6 @@ public class Message {
   public Message decodeMessage() {
     if (encoded) {
       decodeConjugationMap();
-
-      for (boolean b: conjugationMap) {
-        System.out.println(b);
-      }
-
       deconjugateMessage();
       processMessageDecoding();
       encoded = false;

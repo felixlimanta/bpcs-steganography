@@ -1,41 +1,72 @@
-import org.junit.Before;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 import org.junit.Test;
 
 public class MessageTest {
 
-  String filename = "abcde";
-  String text = "abcdefghij";
   float threshold = (float) 0.3;
 
-  @Before
-  public void setUp() {
-
-  }
-
   @Test
-  public void encodingTest() {
+  public void textEncodingTest() {
+    String filename = "abcde";
+    String text = "abcdefghij";
+
     Message m = new Message(filename, text.getBytes(), threshold);
     m.encodeMessage();
 
     byte[] res = m.getEncodedMessage();
-    for (int i = 0; i < res.length; ++i) {
-      System.out.printf("%d:\t%s %c\n", i,
-          String.format("%8s", Integer.toBinaryString(Byte.toUnsignedInt(res[i])))
-              .replace(' ', '0'),
-          (char) Byte.toUnsignedInt(res[i]));
-    }
 
     byte[] res1 = new byte[8];
     System.arraycopy(res, 0, res1, 0, 8);
     int len = Message.decodeMessageLengthHeader(res1);
-    System.out.printf("\nNo of blocks: %d\n", len);
 
     byte[] res2 = new byte[res.length - 8];
     System.arraycopy(res, 8, res2, 0, res.length - 8);
 
     Message m2 = new Message(res2, threshold);
     m2.decodeMessage();
-    System.out.printf("Filename: %s\n", m2.getFilename());
-    System.out.printf("Message: %s\n", new String(m2.getMessage()));
+
+    assertEquals(len, res2.length);
+    assertEquals(filename, m2.getFilename());
+    assertEquals(text, new String(m2.getMessage()));
+  }
+
+  @Test
+  public void fileEncodingTest() throws IOException {
+    String path = "C:\\Users\\ASUS\\Downloads\\64166790_p0.jpg";
+    BufferedImage image = ImageIO.read(new File(path));
+    byte[] data = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
+
+    byte[] orig = new byte[data.length];
+    System.arraycopy(data, 0, orig, 0, data.length);
+
+    Message m = new Message(path, orig, threshold).encodeMessage();
+    byte[] encoded = m.getEncodedMessage();
+
+    byte[] encodedLen = new byte[8];
+    System.arraycopy(encoded, 0, encodedLen, 0, 8);
+
+    byte[] encodedData = new byte[encoded.length - 8];
+    System.arraycopy(encoded, 8, encodedData, 0, encodedData.length);
+
+    Message m2 = new Message(encodedData, threshold).decodeMessage();
+
+    String path2 = "C:\\Users\\ASUS\\Downloads\\64166790_p1.jpg";
+    System.arraycopy(m2.getMessage(), 0, data, 0, m2.getMessage().length);
+    ImageIO.write(image, "jpg", new File(path2));
+
+    assertEquals(path, m2.getFilename());
+    assertArrayEquals(orig, m2.getMessage());
+  }
+
+  private String toBinaryString(byte b) {
+    return String.format("%8s", Integer.toBinaryString(Byte.toUnsignedInt(b)))
+        .replace(' ', '0');
   }
 }
