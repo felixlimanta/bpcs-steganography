@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import javax.imageio.ImageIO;
+import javax.naming.SizeLimitExceededException;
 
 class ImageEncodeDecode {
   private final int MIN_KEY_LENGTH = 1;
@@ -81,13 +82,9 @@ class ImageEncodeDecode {
       bpcsEncoder = new BpcsEncoder(image, threshold);
     }
 
-    Message packedMessage = new Message(messageFilename, message, threshold);
+    byte[] processedMessage = encryptedMessage ? new VigenereCipher(key).encrypt(message) : message;
+    Message packedMessage = new Message(messageFilename, processedMessage, threshold);
     packedMessage.encodeMessage();
-    if (encryptedMessage) {
-      VigenereCipher cipher = new VigenereCipher(key);
-      packedMessage = new Message(cipher.encrypt(packedMessage.getEncodedMessage()), threshold);
-    }
-
     bpcsEncoder.encodeMessageInImage(packedMessage);
 
     ImageEncodeDecode encoded = new ImageEncodeDecode();
@@ -97,21 +94,28 @@ class ImageEncodeDecode {
     return encoded;
   }
 
-  ImageEncodeDecode decodeImage(String key, float threshold, boolean encryptedMessage, boolean randomEncoding) {
+  ImageEncodeDecode decodeImage(String key, float threshold, boolean encryptedMessage, boolean randomEncoding) throws SizeLimitExceededException {
     checkKeyLength(key);
 
-    Message packedMessage = new Message(null, threshold);
-    if (encryptedMessage) {
-      VigenereCipher cipher = new VigenereCipher(key);
-      packedMessage = new Message(cipher.decrypt(packedMessage.getEncodedMessage()), threshold);
+    BpcsEncoder bpcsEncoder;
+    if (randomEncoding) {
+      bpcsEncoder = new BpcsEncoder(image, threshold, key);
     }
-    packedMessage.decodeMessage();
+    else {
+      bpcsEncoder = new BpcsEncoder(image, threshold);
+    }
+
+    Message packedMessage = bpcsEncoder.extractMessageFromImage().decodeMessage();
+    byte[] decodedMessage = packedMessage.getMessage();
+    if (encryptedMessage) {
+      decodedMessage = new VigenereCipher(key).decrypt(decodedMessage);
+    }
 
     ImageEncodeDecode decoded = new ImageEncodeDecode();
-    decoded.image = null;
+    decoded.image = bpcsEncoder.getImage();
     decoded.imageFilename = imageFilename;
-    decoded.message = packedMessage.getMessage();
-    decoded.messageFilename = packedMessage.toString();
+    decoded.message = decodedMessage;
+    decoded.messageFilename = packedMessage.getFilename();
 
     return decoded;
   }

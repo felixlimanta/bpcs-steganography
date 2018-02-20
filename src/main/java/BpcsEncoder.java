@@ -194,7 +194,7 @@ public class BpcsEncoder {
     RasterIndex ri = new RasterIndex(-1);
 
     if (bytes.length > getMaximumCapacity())
-      throw new SizeLimitExceededException("Message larger than image capacity at " + threshold / maxComplexity + " threshold");
+      throw new SizeLimitExceededException(String.format("Message larger than image capacity at %.3f threshold", threshold / maxComplexity));
 
     for (int i = 0; i < bytes.length; i += 8) {
       do {

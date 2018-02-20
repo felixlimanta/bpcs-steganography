@@ -1,17 +1,9 @@
-import java.awt.Image;
+import javax.naming.SizeLimitExceededException;
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class GUIMain {
   private final int MAX_IMAGE_HEIGHT = 400;
@@ -141,10 +133,12 @@ public class GUIMain {
       EncodeDecodeOptionPane encodeDecodeOptionPane = new EncodeDecodeOptionPane(true);
       if (encodeDecodeOptionPane.showDialog(contentPane) == JOptionPane.OK_OPTION) {
         try {
-          openNewWindow(imageEncodeDecode.encodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
-              encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding()));
+          ImageEncodeDecode encoded = imageEncodeDecode.encodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
+              encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding());
+          JOptionPane.showMessageDialog(contentPane, String.format("Image successfully encoded. PSNR = %.3f dB",
+              PsnrCalculator.calculatePSNR(imageEncodeDecode.getImage(), encoded.getImage())), encodeButton.getText(), JOptionPane.ERROR_MESSAGE);
+          openNewWindow(encoded);
         }
-//        catch (SizeLimitExceededException | IllegalArgumentException ex) {
         catch (Exception ex) {
           JOptionPane.showMessageDialog(contentPane, ex.getMessage(), encodeButton.getText(), JOptionPane.ERROR_MESSAGE);
         }
@@ -158,8 +152,11 @@ public class GUIMain {
           openNewWindow(imageEncodeDecode.decodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
               encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding()));
         }
-        catch (IllegalArgumentException ex) {
+        catch (SizeLimitExceededException | IllegalArgumentException ex) {
           JOptionPane.showMessageDialog(contentPane, ex.getMessage(), decodeButton.getText(), JOptionPane.ERROR_MESSAGE);
+        }
+        catch (Exception ex) {
+          JOptionPane.showMessageDialog(contentPane, "Cannot decode this image", decodeButton.getText(), JOptionPane.ERROR_MESSAGE);
         }
       }
     });
