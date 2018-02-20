@@ -290,11 +290,7 @@ public class BpcsEncoder {
   //------------------------------------------------------------------------------------------------
   //endregion
 
-  static class PublicIndex {
-
-  }
-
-  class RasterIndex extends PublicIndex {
+  class RasterIndex {
 
     int x;
     int y;

@@ -2,78 +2,134 @@ import static org.junit.Assert.assertArrayEquals;
 
 import java.awt.image.BufferedImage;
 import org.hamcrest.core.IsEqual;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
 
 public class BpcsEncoderTest {
 
-  private static final String imgPath = "src/test/resources/img_512x512_rgb.bmp";
-  private static final String messagePath = "src/test/resources/msg_1KB.txt";
-  private double threshold = 0.5;
-
+  private final static String path = "src/test/resources/";
+  private final static String[] imgNames = {
+      "img_512x512_gra.png",
+      "img_512x512_rgba.png",
+      "img_1024x1024_rgb.bmp",
+      "img_512x512_gr.png",
+      "img_512x512_rgb.png",
+      "img_1920x1080_rgb.png"
+  };
+  private final static String[] msgNames = {
+      "msg_128B.txt",
+      "msg_256B.txt",
+      "msg_1KB.txt",
+      "msg_16KB.txt",
+      "msg_725KB.gif"
+  };
+  private final static String tempImgName = "temp.png";
+  
   @Rule
   public ErrorCollector collector = new ErrorCollector();
+  private double threshold = 0.5;
 
   @Test
   public void simpleEncodingTest() throws Exception {
-    for (threshold = 0.1; threshold <= 0.5; threshold += 0.05) {
-      String imgPath1 = "src/test/resources/img_512x512_rgb_1.png";
+    for (String imgName: imgNames) {
+      for (String msgName: msgNames) {
+        System.out.println(imgName);
+        System.out.println(msgName);
+        for (threshold = 0.1; threshold <= 0.5; threshold += 0.1) {
+          String imgPath = path + imgName;
+          String msgPath = path + msgName;
+          String imgPath1 = path + tempImgName;
 
-      BufferedImage image = Utility.loadImage(imgPath);
-      BpcsEncoder bpcsEncoder = new BpcsEncoder(image, threshold);
+          BufferedImage image = Utility.loadImage(imgPath);
+          BpcsEncoder bpcsEncoder = new BpcsEncoder(image, threshold);
 
-      byte[] messageData = Utility.loadFile(messagePath);
-      Message message = new Message(messagePath, messageData, threshold).encodeMessage();
+          final long startTime = System.currentTimeMillis();
 
-      bpcsEncoder.encodeMessageInImage(message);
-      Utility.saveImage(bpcsEncoder.getImage(), imgPath1);
+          byte[] messageData = Utility.loadFile(msgPath);
+          Message message = new Message(msgPath, messageData, threshold).encodeMessage();
 
-      BufferedImage image1 = Utility.loadImage(imgPath1);
-      BpcsEncoder bpcsDecoder = new BpcsEncoder(image1, threshold);
+          Message decodedMessage;
+          BufferedImage image1;
+          try {
+            bpcsEncoder.encodeMessageInImage(message);
+            Utility.saveImage(bpcsEncoder.getImage(), imgPath1);
 
-      Message decodedMessage = bpcsDecoder.extractMessageFromImage().decodeMessage();
+            image1 = Utility.loadImage(imgPath1);
+            BpcsEncoder bpcsDecoder = new BpcsEncoder(image1, threshold);
 
-      collector.checkThat("Threshold: " + threshold, messagePath, IsEqual.equalTo(decodedMessage.getFilename()));
-      collector.checkSucceeds(() -> {
-        assertArrayEquals("Threshold: " + threshold, messageData, decodedMessage.getMessage());
-        return null;
-      });
+            decodedMessage = bpcsDecoder.extractMessageFromImage().decodeMessage();
 
-      image = Utility.loadImage(imgPath);
-      image1 = Utility.loadImage(imgPath1);
-      System.out.printf("Threshold: %f\t\tPSNR: %f\n", threshold, PsnrCalculator.calculatePSNR(image, image1));
+            collector.checkThat("Threshold: " + threshold, msgPath,
+                IsEqual.equalTo(decodedMessage.getFilename()));
+            collector.checkSucceeds(() -> {
+              assertArrayEquals("Threshold: " + threshold, messageData, decodedMessage.getMessage());
+              return null;
+            });
+
+            final long endTime = System.currentTimeMillis();
+
+            image = Utility.loadImage(imgPath);
+            image1 = Utility.loadImage(imgPath1);
+            System.out.printf("Threshold: %f\t\tPSNR: %f\t\tTime: %dms\n", threshold,
+                PsnrCalculator.calculatePSNR(image, image1), endTime - startTime);
+
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        }
+        System.out.println();
+      }
+      System.out.println("============");
     }
   }
 
+  @Ignore
   @Test
   public void randomPlacementEncodingTest() throws Exception {
-    for (threshold = 0.1; threshold <= 0.5; threshold += 0.05) {
-      String imgPath1 = "src/test/resources/img_512x512_rgb_1.png";
+    for (String imgName: imgNames) {
+      for (String msgName: msgNames) {
+        System.out.println(imgName);
+        System.out.println(msgName);
+        for (threshold = 0.1; threshold <= 0.5; threshold += 0.1) {
+          String imgPath = path + imgName;
+          String msgPath = path + msgName;
+          String imgPath1 = path + tempImgName;
 
-      BufferedImage image = Utility.loadImage(imgPath);
-      BpcsEncoder bpcsEncoder = new BpcsEncoder(image, threshold, "key");
+          BufferedImage image = Utility.loadImage(imgPath);
+          BpcsEncoder bpcsEncoder = new BpcsEncoder(image, threshold, "miyazonokaori");
 
-      byte[] messageData = Utility.loadFile(messagePath);
-      Message message = new Message(messagePath, messageData, threshold).encodeMessage();
+          final long startTime = System.currentTimeMillis();
 
-      bpcsEncoder.encodeMessageInImage(message);
-      Utility.saveImage(bpcsEncoder.getImage(), imgPath1);
+          byte[] messageData = Utility.loadFile(msgPath);
+          Message message = new Message(msgPath, messageData, threshold).encodeMessage();
 
-      BufferedImage image1 = Utility.loadImage(imgPath1);
-      BpcsEncoder bpcsDecoder = new BpcsEncoder(image1, threshold, "key");
+          bpcsEncoder.encodeMessageInImage(message);
+          Utility.saveImage(bpcsEncoder.getImage(), imgPath1);
 
-      Message decodedMessage = bpcsDecoder.extractMessageFromImage().decodeMessage();
+          BufferedImage image1 = Utility.loadImage(imgPath1);
+          BpcsEncoder bpcsDecoder = new BpcsEncoder(image1, threshold, "miyazonokaori");
 
-      collector.checkThat(messagePath, IsEqual.equalTo(decodedMessage.getFilename()));
-      collector.checkSucceeds(() -> {
-        assertArrayEquals("Threshold: " + threshold, messageData, decodedMessage.getMessage());
-        return null;
-      });
+          Message decodedMessage = bpcsDecoder.extractMessageFromImage().decodeMessage();
 
-      image = Utility.loadImage(imgPath);
-      image1 = Utility.loadImage(imgPath1);
-      System.out.printf("Threshold: %f\t\tPSNR: %f\n", threshold, PsnrCalculator.calculatePSNR(image, image1));
+          final long endTime = System.currentTimeMillis();
+
+          collector.checkThat("Threshold: " + threshold, msgPath,
+              IsEqual.equalTo(decodedMessage.getFilename()));
+          collector.checkSucceeds(() -> {
+            assertArrayEquals("Threshold: " + threshold, messageData, decodedMessage.getMessage());
+            return null;
+          });
+
+          image = Utility.loadImage(imgPath);
+          image1 = Utility.loadImage(imgPath1);
+          System.out.printf("Threshold: %f\t\tPSNR: %f\t\tTime: %dms\n", threshold,
+              PsnrCalculator.calculatePSNR(image, image1), endTime - startTime);
+        }
+        System.out.println();
+      }
+      System.out.println("============");
     }
   }
 }
