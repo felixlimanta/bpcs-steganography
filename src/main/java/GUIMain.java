@@ -1,9 +1,17 @@
-import javax.naming.SizeLimitExceededException;
-import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import java.awt.*;
+import java.awt.Image;
 import java.io.File;
 import java.io.IOException;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class GUIMain {
   private final int MAX_IMAGE_HEIGHT = 400;
@@ -136,7 +144,8 @@ public class GUIMain {
           openNewWindow(imageEncodeDecode.encodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
               encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding()));
         }
-        catch (SizeLimitExceededException | IllegalArgumentException ex) {
+//        catch (SizeLimitExceededException | IllegalArgumentException ex) {
+        catch (Exception ex) {
           JOptionPane.showMessageDialog(contentPane, ex.getMessage(), encodeButton.getText(), JOptionPane.ERROR_MESSAGE);
         }
       }

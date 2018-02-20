@@ -1,9 +1,8 @@
-import javax.imageio.ImageIO;
-import javax.naming.SizeLimitExceededException;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import javax.imageio.ImageIO;
 
 class ImageEncodeDecode {
   private final int MIN_KEY_LENGTH = 1;
@@ -71,7 +70,7 @@ class ImageEncodeDecode {
     }
   }
 
-  ImageEncodeDecode encodeImage(String key, float threshold, boolean encryptedMessage, boolean randomEncoding) throws SizeLimitExceededException {
+  ImageEncodeDecode encodeImage(String key, float threshold, boolean encryptedMessage, boolean randomEncoding) throws Exception {
     checkKeyLength(key);
 
     BpcsEncoder bpcsEncoder;

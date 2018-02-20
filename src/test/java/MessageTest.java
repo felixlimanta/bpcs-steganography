@@ -3,6 +3,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.Random;
 import org.junit.Test;
 
 public class MessageTest {
@@ -60,5 +61,35 @@ public class MessageTest {
 
     assertEquals(path, m2.getFilename());
     assertArrayEquals(orig, m2.getMessage());
+  }
+
+  @Test
+  public void encodedMessageSizeRegression() {
+    // 256 bytes
+    String filename = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspend"
+        + "isse efficitur quis odio iaculis consequat. Nunc ullamcorper odi"
+        + "o in purus imperdiet condimentum. Cras nunc sapien, efficitur qu"
+        + "is aliquet nec, gravida eu odio. Etiam dui risus, pulvinar amet.";
+
+    final int n = 10000;
+    int[] x = new int[n];
+    int[] y = new int[n];
+
+    for (int i = 0; i < n; ++i) {
+      Random r = new Random();
+      int len = r.nextInt(1 << 20);
+
+      byte[] data = new byte[len];
+      r.nextBytes(data);
+
+      Message m = new Message(filename, data, 0.3);
+      m.encodeMessage();
+
+      y[i] = data.length;
+      x[i] = m.getEncodedMessage().length;
+    }
+
+    double[] reg = Utility.calculateLinearRegression(x, y);
+    System.out.printf("Formula: y = %f x + %f\n", reg[0], reg[1]);
   }
 }

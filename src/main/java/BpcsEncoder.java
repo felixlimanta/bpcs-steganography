@@ -22,7 +22,7 @@ public class BpcsEncoder {
   private int numOfChannels;
   private boolean hasAlpha;
   private int numOfPlanes;
-  private int threshold;
+  private double threshold;
 
   private Random random;
   private String key;
@@ -32,12 +32,12 @@ public class BpcsEncoder {
   //region Construction
   //------------------------------------------------------------------------------------------------
 
-  public BpcsEncoder(BufferedImage image, float threshold) {
+  public BpcsEncoder(BufferedImage image, double threshold) {
     this.image = Utility.deepCopy(image);
     this.numOfChannels = image.getRaster().getNumBands();
     this.hasAlpha = image.getColorModel().hasAlpha();
     this.embeddedSet = new HashSet<>();
-    this.threshold = (int) (threshold * maxComplexity);
+    this.threshold = threshold * maxComplexity;
     this.numOfPlanes = image.getWidth() * image.getHeight() * numOfChannels * 8;
 
 //    toGreyCode();
@@ -45,7 +45,7 @@ public class BpcsEncoder {
 //    toBinary();
   }
 
-  public BpcsEncoder(BufferedImage image, float threshold, String key) {
+  public BpcsEncoder(BufferedImage image, double threshold, String key) {
     this(image, threshold);
     this.key = key;
     this.random = new Random(key.hashCode());
@@ -69,7 +69,7 @@ public class BpcsEncoder {
     return numOfChannels;
   }
 
-  public int getThreshold() {
+  public double getThreshold() {
     return threshold;
   }
 
@@ -159,6 +159,26 @@ public class BpcsEncoder {
     return imageSegmentsComplexity[ri.y / 8][ri.x / 8][ri.channel][ri.bitplane];
   }
 
+  public int getMaximumCapacity() {
+    int h = image.getHeight() / 8;
+    int w = image.getWidth() / 8;
+    int n = 0;
+
+    for (int y = 0; y < h; ++y) {
+      for (int x = 0; x < w; ++x) {
+        for (int channel = 0; channel < numOfChannels; ++channel) {
+          for (int bitplane = 0; bitplane < 8; ++bitplane) {
+            if (imageSegmentsComplexity[y][x][channel][bitplane] > threshold)
+              n++;
+          }
+        }
+      }
+    }
+
+    n *= 8;
+    return (int) (0.984375 * n - 278.076955);
+  }
+
   //------------------------------------------------------------------------------------------------
   //endregion
 
@@ -172,6 +192,9 @@ public class BpcsEncoder {
 
     byte[] bytes = message.getEncodedMessage();
     RasterIndex ri = new RasterIndex(-1);
+
+    if (bytes.length > getMaximumCapacity())
+      throw new SizeLimitExceededException("Message larger than image capacity at " + threshold / maxComplexity + " threshold");
 
     for (int i = 0; i < bytes.length; i += 8) {
       do {

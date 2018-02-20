@@ -10,11 +10,11 @@ public class Message {
 
   // Maximum complexity for a 8x8 image (checkerboard pattern)
   private final static int maxComplexity = 112;
-  int[] messageSegmentComplexity;
+  private int[] messageSegmentComplexity;
   private String filename;
   private byte[] message;
   private byte[] encodedMessage;
-  private int threshold;
+  private double threshold;
 
   private boolean[] conjugationMap;
   private boolean encoded;
@@ -22,27 +22,19 @@ public class Message {
   //region Public functions
   //------------------------------------------------------------------------------------------------
 
-  public Message(String filename, byte[] message, int threshold) {
+  public Message(String filename, byte[] message, double threshold) {
     this.filename = filename;
     this.message = new byte[message.length];
-    this.threshold = threshold;
+    this.threshold = threshold * maxComplexity;
     System.arraycopy(message, 0, this.message, 0, message.length);
     encoded = false;
   }
 
-  public Message(String filename, byte[] message, float threshold) {
-    this(filename, message, (int) (threshold * maxComplexity));
-  }
-
-  public Message(byte[] encodedMessage, int threshold) {
+  public Message(byte[] encodedMessage, double threshold) {
     this.encodedMessage = new byte[encodedMessage.length];
     System.arraycopy(encodedMessage, 0, this.encodedMessage, 0, encodedMessage.length);
-    this.threshold = threshold;
+    this.threshold = threshold * maxComplexity;
     encoded = true;
-  }
-
-  public Message(byte[] encodedMessage, float threshold) {
-    this(encodedMessage, (int) (threshold * maxComplexity));
   }
 
   public Message encodeMessage() {

@@ -110,4 +110,35 @@ public class Utility {
     IntStream.range(0, array.length).forEach(i -> byteArray[i] = array[i]);
     return byteArray;
   }
+
+  public static double[] calculateLinearRegression(int[] x, int[] y) {
+    if (x.length != y.length)
+      throw new IllegalArgumentException("Different array sizes");
+
+    int n = x.length;
+
+    // first pass: read in data, compute xbar and ybar
+    double sumx = 0.0, sumy = 0.0, sumx2 = 0.0;
+    for (int i = 0; i < n; ++i) {
+      sumx  += x[i];
+      sumx2 += x[i] * x[i];
+      sumy  += y[i];
+    }
+
+    double xbar = sumx / n;
+    double ybar = sumy / n;
+
+    // second pass: compute summary statistics
+    double xxbar = 0.0, yybar = 0.0, xybar = 0.0;
+    for (int i = 0; i < n; i++) {
+      xxbar += (x[i] - xbar) * (x[i] - xbar);
+      yybar += (y[i] - ybar) * (y[i] - ybar);
+      xybar += (x[i] - xbar) * (y[i] - ybar);
+    }
+    double beta1 = xybar / xxbar;
+    double beta0 = ybar - beta1 * xbar;
+
+    // print results
+    return new double[]{beta1, beta0};
+  }
 }
