@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 class EncodeDecodeOptionPane {
   private JPanel panel;
@@ -13,10 +15,10 @@ class EncodeDecodeOptionPane {
     this.encode = encode;
     panel = new JPanel(new GridLayout(6, 1));
     panel.add(new JLabel("Enter key:"));
-    keyField = new JPasswordField();
+    keyField = new JPasswordField(25);
     panel.add(keyField);
     panel.add(new JLabel("Enter BPCS threshold:"));
-    thresholdSpinner = new JSpinner(new SpinnerNumberModel(0.3, 0, 1, 0.01));
+    thresholdSpinner = new JSpinner(new SpinnerNumberModel(Float.valueOf(0.3f), Float.valueOf(0.0f), Float.valueOf(1.0f), Float.valueOf(0.01f)));
     panel.add(thresholdSpinner);
     encryptedMessageCheckbox = new JCheckBox(encode ? "Encrypt message before encoding" : "Message is encrypted before encoding", true);
     panel.add(encryptedMessageCheckbox);
@@ -32,8 +34,8 @@ class EncodeDecodeOptionPane {
     return new String(keyField.getPassword());
   }
 
-  double getThreshold() {
-    return (double) thresholdSpinner.getValue();
+  float getThreshold() {
+    return (float) thresholdSpinner.getValue();
   }
 
   boolean isEncryptedMessage() {
