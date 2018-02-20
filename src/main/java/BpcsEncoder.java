@@ -333,7 +333,7 @@ public class BpcsEncoder {
       if (isRandom()) {
         do {
           n = random.nextInt(numOfPlanes);
-        } while (embeddedSet.contains(n));
+        } while (n < 0 || embeddedSet.contains(n));
       } else {
         n = prev + 1;
       }

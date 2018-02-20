@@ -8,7 +8,7 @@ import org.junit.rules.ErrorCollector;
 
 public class BpcsEncoderTest {
 
-  private static final String imgPath = "src/test/resources/img_512x512_gra.png";
+  private static final String imgPath = "src/test/resources/img_512x512_rgb.bmp";
   private static final String messagePath = "src/test/resources/msg_1KB.txt";
   private double threshold = 0.5;
 
@@ -34,14 +34,11 @@ public class BpcsEncoderTest {
 
       Message decodedMessage = bpcsDecoder.extractMessageFromImage().decodeMessage();
 
-      collector.checkThat(messagePath, IsEqual.equalTo(decodedMessage.getFilename()));
+      collector.checkThat("Threshold: " + threshold, messagePath, IsEqual.equalTo(decodedMessage.getFilename()));
       collector.checkSucceeds(() -> {
         assertArrayEquals("Threshold: " + threshold, messageData, decodedMessage.getMessage());
         return null;
       });
-
-//      assertEquals(messagePath, decodedMessage.getFilename());
-//      assertArrayEquals(messageData, decodedMessage.getMessage());
 
       image = Utility.loadImage(imgPath);
       image1 = Utility.loadImage(imgPath1);
@@ -73,9 +70,6 @@ public class BpcsEncoderTest {
         assertArrayEquals("Threshold: " + threshold, messageData, decodedMessage.getMessage());
         return null;
       });
-
-//      assertEquals(messagePath, decodedMessage.getFilename());
-//      assertArrayEquals(messageData, decodedMessage.getMessage());
 
       image = Utility.loadImage(imgPath);
       image1 = Utility.loadImage(imgPath1);
