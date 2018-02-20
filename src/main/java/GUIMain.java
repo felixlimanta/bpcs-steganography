@@ -1,3 +1,4 @@
+import javax.naming.SizeLimitExceededException;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
@@ -131,16 +132,26 @@ public class GUIMain {
     encodeButton.addActionListener(e -> {
       EncodeDecodeOptionPane encodeDecodeOptionPane = new EncodeDecodeOptionPane(true);
       if (encodeDecodeOptionPane.showDialog(contentPane) == JOptionPane.OK_OPTION) {
-        openNewWindow(imageEncodeDecode.encodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
-            encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding()));
+        try {
+          openNewWindow(imageEncodeDecode.encodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
+              encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding()));
+        }
+        catch (SizeLimitExceededException | IllegalArgumentException ex) {
+          JOptionPane.showMessageDialog(contentPane, ex.getMessage(), encodeButton.getText(), JOptionPane.ERROR_MESSAGE);
+        }
       }
     });
 
     decodeButton.addActionListener(e -> {
       EncodeDecodeOptionPane encodeDecodeOptionPane = new EncodeDecodeOptionPane(false);
       if (encodeDecodeOptionPane.showDialog(contentPane) == JOptionPane.OK_OPTION) {
-        openNewWindow(imageEncodeDecode.decodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
-            encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding()));
+        try {
+          openNewWindow(imageEncodeDecode.decodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
+              encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding()));
+        }
+        catch (IllegalArgumentException ex) {
+          JOptionPane.showMessageDialog(contentPane, ex.getMessage(), decodeButton.getText(), JOptionPane.ERROR_MESSAGE);
+        }
       }
     });
   }

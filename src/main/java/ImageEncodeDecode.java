@@ -1,10 +1,13 @@
 import javax.imageio.ImageIO;
+import javax.naming.SizeLimitExceededException;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
 class ImageEncodeDecode {
+  private final int MIN_KEY_LENGTH = 1;
+  private final int MAX_KEY_LENGTH = 25;
   private String imageFilename;
   private BufferedImage image;
   private String messageFilename;
@@ -59,11 +62,58 @@ class ImageEncodeDecode {
     return message != null && messageFilename != null;
   }
 
-  ImageEncodeDecode encodeImage(String key, double threshold, boolean encryptedMessage, boolean randomEncoding) {
-    return this;
+  private void checkKeyLength(String key) {
+    if (key.length() < MIN_KEY_LENGTH) {
+      throw new IllegalArgumentException("Key must be at least " + MIN_KEY_LENGTH + " character(s) long");
+    }
+    else if (key.length() > MAX_KEY_LENGTH) {
+      throw new IllegalArgumentException("Key must be at most " + MAX_KEY_LENGTH + " character(s) long");
+    }
   }
 
-  ImageEncodeDecode decodeImage(String key, double threshold, boolean encryptedMessage, boolean randomEncoding) {
-    return this;
+  ImageEncodeDecode encodeImage(String key, float threshold, boolean encryptedMessage, boolean randomEncoding) throws SizeLimitExceededException {
+    checkKeyLength(key);
+
+    BpcsEncoder bpcsEncoder;
+    if (randomEncoding) {
+      bpcsEncoder = new BpcsEncoder(image, threshold, key);
+    }
+    else {
+      bpcsEncoder = new BpcsEncoder(image, threshold);
+    }
+
+    Message packedMessage = new Message(messageFilename, message, threshold);
+    packedMessage.encodeMessage();
+    if (encryptedMessage) {
+      VigenereCipher cipher = new VigenereCipher(key);
+      packedMessage = new Message(cipher.encrypt(packedMessage.getEncodedMessage()), threshold);
+    }
+
+    bpcsEncoder.encodeMessageInImage(packedMessage);
+
+    ImageEncodeDecode encoded = new ImageEncodeDecode();
+    encoded.image = bpcsEncoder.getImage();
+    encoded.imageFilename = imageFilename;
+
+    return encoded;
+  }
+
+  ImageEncodeDecode decodeImage(String key, float threshold, boolean encryptedMessage, boolean randomEncoding) {
+    checkKeyLength(key);
+
+    Message packedMessage = new Message(null, threshold);
+    if (encryptedMessage) {
+      VigenereCipher cipher = new VigenereCipher(key);
+      packedMessage = new Message(cipher.decrypt(packedMessage.getEncodedMessage()), threshold);
+    }
+    packedMessage.decodeMessage();
+
+    ImageEncodeDecode decoded = new ImageEncodeDecode();
+    decoded.image = null;
+    decoded.imageFilename = imageFilename;
+    decoded.message = packedMessage.getMessage();
+    decoded.messageFilename = packedMessage.toString();
+
+    return decoded;
   }
 }
