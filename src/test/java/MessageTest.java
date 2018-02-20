@@ -1,16 +1,24 @@
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
-import java.io.File;
 import java.io.IOException;
-import javax.imageio.ImageIO;
 import org.junit.Test;
 
 public class MessageTest {
 
+  String path = "C:\\Users\\ASUS\\Downloads\\64166790_p0.jpg";
+  String path1 = "C:\\Users\\ASUS\\Downloads\\64166790_p0_1.jpg";
+  String path2 = "C:\\Users\\ASUS\\Downloads\\64166790_p0_2.jpg";
   float threshold = (float) 0.3;
+
+  @Test
+  public void complexityTest() throws IOException {
+    byte[] data = Utility.loadFile(path);
+
+    Message m = new Message(path, data, threshold).encodeMessage();
+    assertTrue(m.areAllSegmentsComplex());
+  }
 
   @Test
   public void textEncodingTest() {
@@ -39,27 +47,16 @@ public class MessageTest {
 
   @Test
   public void fileEncodingTest() throws IOException {
-    String path = "C:\\Users\\ASUS\\Downloads\\64166790_p0.jpg";
-    BufferedImage image = ImageIO.read(new File(path));
-    byte[] data = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
-
-    byte[] orig = new byte[data.length];
-    System.arraycopy(data, 0, orig, 0, data.length);
+    byte[] orig = Utility.loadFile(path);
 
     Message m = new Message(path, orig, threshold).encodeMessage();
     byte[] encoded = m.getEncodedMessage();
-
-    byte[] encodedLen = new byte[8];
-    System.arraycopy(encoded, 0, encodedLen, 0, 8);
 
     byte[] encodedData = new byte[encoded.length - 8];
     System.arraycopy(encoded, 8, encodedData, 0, encodedData.length);
 
     Message m2 = new Message(encodedData, threshold).decodeMessage();
-
-    String path2 = "C:\\Users\\ASUS\\Downloads\\64166790_p1.jpg";
-    System.arraycopy(m2.getMessage(), 0, data, 0, m2.getMessage().length);
-    ImageIO.write(image, "jpg", new File(path2));
+    Utility.saveFile(path2, m2.getMessage());
 
     assertEquals(path, m2.getFilename());
     assertArrayEquals(orig, m2.getMessage());

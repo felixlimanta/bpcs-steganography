@@ -10,11 +10,10 @@ public class Message {
 
   // Maximum complexity for a 8x8 image (checkerboard pattern)
   private final static int maxComplexity = 112;
-
+  int[] messageSegmentComplexity;
   private String filename;
   private byte[] message;
   private byte[] encodedMessage;
-  private int[] messageSegmentComplexity;
   private int threshold;
 
   private boolean[] conjugationMap;
@@ -66,6 +65,12 @@ public class Message {
     }
     return this;
   }
+
+  //------------------------------------------------------------------------------------------------
+  //endregion
+
+  //region Getter/setter
+  //------------------------------------------------------------------------------------------------
 
   public boolean isEncoded() {
     return encoded;
@@ -138,27 +143,41 @@ public class Message {
         b1 = Utility.getBit(data[i], j);
         b3 = Utility.getBit(data[i + 1], j);
 
-        if (b1 ^ b2)
+        if (b1 ^ b2) {
           n++;
-        if (b1 ^ b3)
+        }
+        if (b1 ^ b3) {
           n++;
+        }
       }
 
       b1 = Utility.getBit(data[i], 7);
       b3 = Utility.getBit(data[i + 1], 7);
 
-      if (b1 ^ b3)
+      if (b1 ^ b3) {
         n++;
+      }
     }
 
     for (int j = 0; j < 7; ++j) {
       b1 = Utility.getBit(data[startIndex + 7], j);
       b2 = Utility.getBit(data[startIndex + 7], j + 1);
 
-      if (b1 ^ b2)
+      if (b1 ^ b2) {
         n++;
+      }
     }
     return n;
+  }
+
+  public boolean areAllSegmentsComplex() {
+    for (int i = 0; i < encodedMessage.length; i += 8) {
+      int complexity = calculateSegmentComplexity(encodedMessage, i);
+      if (complexity < threshold) {
+        return false;
+      }
+    }
+    return true;
   }
 
   //------------------------------------------------------------------------------------------------
@@ -166,7 +185,7 @@ public class Message {
 
   //region Message conjugation
   //------------------------------------------------------------------------------------------------
-  
+
   private void conjugateMessage() {
     conjugationMap = new boolean[messageSegmentComplexity.length];
 
@@ -190,7 +209,7 @@ public class Message {
   private static void conjugateBlock(byte[] data, int startIndex) {
     for (int i = startIndex; i < startIndex + 8; ++i) {
       int temp = Byte.toUnsignedInt(data[i]);
-//      temp ^= checkerboard[i % 2];
+      temp ^= checkerboard[i % 2];
       data[i] = (byte) temp;
     }
   }
@@ -198,7 +217,7 @@ public class Message {
   //------------------------------------------------------------------------------------------------
   //endregion
 
-  //region Conjugation map encoding/decoding
+  //region Header encoding/decoding
   //------------------------------------------------------------------------------------------------
 
   private void encodeConjugationMap() {
@@ -265,7 +284,8 @@ public class Message {
     byte[] concatedMessage = new byte[conjugationBlock.length + encodedMessage.length + 8];
     System.arraycopy(lenHeader, 0, concatedMessage, 0, 8);
     System.arraycopy(conjugationBlock, 0, concatedMessage, 8, conjugationBlock.length);
-    System.arraycopy(encodedMessage, 0, concatedMessage, conjugationBlock.length + 8, encodedMessage.length);
+    System.arraycopy(encodedMessage, 0, concatedMessage, conjugationBlock.length + 8,
+        encodedMessage.length);
     encodedMessage = concatedMessage;
   }
 
@@ -303,8 +323,9 @@ public class Message {
     }
 
     // Skip padding
-    while (n % 8 != 0)
+    while (n % 8 != 0) {
       n++;
+    }
 
     // Extract message
     byte[] msg = new byte[encodedMessage.length - n];
@@ -313,8 +334,9 @@ public class Message {
   }
 
   public static int decodeMessageLengthHeader(byte[] lengthHeader) {
-    if (lengthHeader.length != 8)
+    if (lengthHeader.length != 8) {
       throw new IllegalArgumentException("Length header must have length of 8");
+    }
 
     byte[] len = new byte[8];
     System.arraycopy(lengthHeader, 0, len, 0, 8);

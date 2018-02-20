@@ -2,6 +2,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.WritableRaster;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -25,6 +26,13 @@ public class Utility {
     return Files.readAllBytes(Paths.get(path));
   }
 
+  public static void saveFile(String path, byte[] data) throws IOException {
+    try (FileOutputStream fos = new FileOutputStream(path)) {
+      fos.write(data);
+      fos.close();
+    }
+  }
+
   public static String getFileExtension(String path) {
     try {
       return path.substring(path.lastIndexOf(".") + 1);
@@ -44,8 +52,9 @@ public class Utility {
     if (img1.getWidth() == img2.getWidth() && img1.getHeight() == img2.getHeight()) {
       for (int x = 0; x < img1.getWidth(); x++) {
         for (int y = 0; y < img1.getHeight(); y++) {
-          if (img1.getRGB(x, y) != img2.getRGB(x, y))
+          if (img1.getRGB(x, y) != img2.getRGB(x, y)) {
             return false;
+          }
         }
       }
     } else {
