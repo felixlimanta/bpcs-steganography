@@ -136,7 +136,7 @@ public class GUIMain {
           ImageEncodeDecode encoded = imageEncodeDecode.encodeImage(encodeDecodeOptionPane.getKey(), encodeDecodeOptionPane.getThreshold(),
               encodeDecodeOptionPane.isEncryptedMessage(), encodeDecodeOptionPane.isRandomEncoding());
           JOptionPane.showMessageDialog(contentPane, String.format("Image successfully encoded. PSNR = %.3f dB",
-              PsnrCalculator.calculatePSNR(imageEncodeDecode.getImage(), encoded.getImage())), encodeButton.getText(), JOptionPane.ERROR_MESSAGE);
+              PsnrCalculator.calculatePSNR(imageEncodeDecode.getImage(), encoded.getImage())), encodeButton.getText(), JOptionPane.INFORMATION_MESSAGE);
           openNewWindow(encoded);
         }
         catch (Exception ex) {
