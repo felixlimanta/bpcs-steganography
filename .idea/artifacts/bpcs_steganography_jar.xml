@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="bpcs-steganography:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/bpcs_steganography_jar</output-path>
+    <root id="archive" name="bpcs-steganography.jar">
+      <element id="module-output" name="bpcs-steganography" />
+    </root>
+  </artifact>
+</component>

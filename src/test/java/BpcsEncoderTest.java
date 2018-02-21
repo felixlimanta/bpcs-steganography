@@ -1,6 +1,7 @@
 import static org.junit.Assert.assertArrayEquals;
 
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import org.hamcrest.core.IsEqual;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -11,10 +12,10 @@ public class BpcsEncoderTest {
 
   private final static String path = "src/test/resources/";
   private final static String[] imgNames = {
-      "img_512x512_gra.png",
-      "img_512x512_rgba.png",
+//      "img_512x512_gra.png",
+//      "img_512x512_rgba.png",
       "img_1024x1024_rgb.bmp",
-      "img_512x512_gr.png",
+//      "img_512x512_gr.png",
       "img_512x512_rgb.png",
       "img_1920x1080_rgb.png"
   };
@@ -78,6 +79,29 @@ public class BpcsEncoderTest {
           } catch (Exception e) {
             e.printStackTrace();
           }
+          return;
+        }
+        System.out.println();
+      }
+      System.out.println("============");
+    }
+  }
+
+  @Test
+  public void capacityTest() throws IOException {
+    for (String imgName: imgNames) {
+      for (String msgName: msgNames) {
+        System.out.println(imgName);
+        System.out.println(msgName);
+        for (threshold = 0.1; threshold <= 0.5; threshold += 0.1) {
+          String imgPath = path + imgName;
+          String msgPath = path + msgName;
+          String imgPath1 = path + tempImgName;
+
+          BufferedImage image = Utility.loadImage(imgPath);
+          BpcsEncoder bpcsEncoder = new BpcsEncoder(image, threshold, "miyazonokaori");
+          System.out.println(bpcsEncoder.getMaximumCapacity());
+
         }
         System.out.println();
       }
